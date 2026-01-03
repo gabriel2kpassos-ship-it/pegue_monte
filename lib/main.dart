@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart'; // Adicionado
+import 'firebase_options.dart'; // Adicionado
 
 import 'core/theme/app_theme.dart';
-import 'modules/dashboard/dashboard_page.dart';
+import 'modules/login/login_page.dart'; // Vamos criar este arquivo
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializa o Firebase antes de rodar o app
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   runApp(const KitRentalApp());
 }
 
@@ -19,20 +27,19 @@ class KitRentalApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
 
-      // ✅ Locale BR
       locale: const Locale('pt', 'BR'),
       supportedLocales: const [
         Locale('pt', 'BR'),
       ],
 
-      // ❗ NÃO usar const aqui
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      home: const DashboardPage(),
+      // Agora o app começa pela tela de Login
+      home: const LoginPage(), 
     );
   }
 }
