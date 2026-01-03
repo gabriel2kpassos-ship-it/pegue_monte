@@ -12,8 +12,8 @@ class ClienteModel {
   factory ClienteModel.fromMap(String id, Map<String, dynamic> map) {
     return ClienteModel(
       id: id,
-      nome: map['nome'] as String,
-      telefone: map['telefone'] as String,
+      nome: map['nome'] ?? '',
+      telefone: map['telefone'] ?? '',
     );
   }
 
@@ -22,5 +22,16 @@ class ClienteModel {
       'nome': nome,
       'telefone': telefone,
     };
+  }
+
+  ClienteModel copyWith({
+    String? nome,
+    String? telefone,
+  }) {
+    return ClienteModel(
+      id: id,
+      nome: nome ?? this.nome,
+      telefone: telefone ?? this.telefone,
+    );
   }
 }

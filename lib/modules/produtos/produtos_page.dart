@@ -1,67 +1,64 @@
 import 'package:flutter/material.dart';
-import '../../core/services/produto_service.dart';
-import '../../models/produto_model.dart';
+import 'produto_form_page.dart';
+import 'produtos_controller.dart';
 
-class ProdutosPage extends StatelessWidget {
-  final service = ProdutoService();
-  final nomeCtrl = TextEditingController();
-  final estoqueCtrl = TextEditingController();
+class ProdutosPage extends StatefulWidget {
+  const ProdutosPage({super.key});
 
-  ProdutosPage({super.key});
+  @override
+  State<ProdutosPage> createState() => _ProdutosPageState();
+}
+
+class _ProdutosPageState extends State<ProdutosPage> {
+  void atualizarTela() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
+    final produtos = ProdutosController.produtos;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Produtos')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                TextField(
-                  controller: nomeCtrl,
-                  decoration: const InputDecoration(labelText: 'Nome'),
-                ),
-                TextField(
-                  controller: estoqueCtrl,
-                  decoration: const InputDecoration(labelText: 'Estoque'),
-                  keyboardType: TextInputType.number,
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    service.adicionar(
-                      nomeCtrl.text,
-                      int.parse(estoqueCtrl.text),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProdutoFormPage()),
+          );
+          if (result == true) atualizarTela();
+        },
+        child: const Icon(Icons.add),
+      ),
+      body: produtos.isEmpty
+          ? const Center(child: Text('Nenhum produto cadastrado'))
+          : ListView.separated(
+              itemCount: produtos.length,
+              separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (context, index) {
+                final produto = produtos[index];
+
+                return ListTile(
+                  title: Text(produto.nome),
+                  subtitle:
+                      Text('Quantidade em estoque: ${produto.quantidade}'),
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProdutoFormPage(produto: produto),
+                      ),
                     );
-                    nomeCtrl.clear();
-                    estoqueCtrl.clear();
+                    if (result == true) atualizarTela();
                   },
-                  child: const Text('Adicionar'),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<ProdutoModel>>(
-              stream: service.listar(),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                return ListView(
-                  children: snapshot.data!
-                      .map(
-                        (p) => ListTile(
-                          title: Text(p.nome),
-                          subtitle: Text('Estoque: ${p.estoque}'),
-                        ),
-                      )
-                      .toList(),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      ProdutosController.remover(produto.id);
+                      atualizarTela();
+                    },
+                  ),
                 );
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -1,76 +1,63 @@
 import 'package:flutter/material.dart';
-import '../../core/services/cliente_service.dart';
-import '../../models/cliente_model.dart';
+import 'cliente_form_page.dart';
+import 'clientes_controller.dart';
 
-class ClientesPage extends StatelessWidget {
-  final service = ClienteService();
-  final nomeCtrl = TextEditingController();
-  final telefoneCtrl = TextEditingController();
+class ClientesPage extends StatefulWidget {
+  const ClientesPage({super.key});
 
-  ClientesPage({super.key});
+  @override
+  State<ClientesPage> createState() => _ClientesPageState();
+}
+
+class _ClientesPageState extends State<ClientesPage> {
+  void atualizarTela() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
+    final clientes = ClientesController.clientes;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Clientes')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              children: [
-                TextField(
-                  controller: nomeCtrl,
-                  decoration: const InputDecoration(labelText: 'Nome'),
-                ),
-                TextField(
-                  controller: telefoneCtrl,
-                  decoration: const InputDecoration(labelText: 'Telefone'),
-                  keyboardType: TextInputType.phone,
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (nomeCtrl.text.isEmpty ||
-                        telefoneCtrl.text.isEmpty) {
-                      return;
-                    }
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ClienteFormPage()),
+          );
+          if (result == true) atualizarTela();
+        },
+        child: const Icon(Icons.add),
+      ),
+      body: clientes.isEmpty
+          ? const Center(child: Text('Nenhum cliente cadastrado'))
+          : ListView.separated(
+              itemCount: clientes.length,
+              separatorBuilder: (_, __) => const Divider(),
+              itemBuilder: (context, index) {
+                final cliente = clientes[index];
 
-                    service.adicionar(
-                      nomeCtrl.text,
-                      telefoneCtrl.text,
+                return ListTile(
+                  title: Text(cliente.nome),
+                  subtitle: Text(cliente.telefone),
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ClienteFormPage(cliente: cliente),
+                      ),
                     );
-
-                    nomeCtrl.clear();
-                    telefoneCtrl.clear();
+                    if (result == true) atualizarTela();
                   },
-                  child: const Text('Adicionar'),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<List<ClienteModel>>(
-              stream: service.listar(),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                return ListView(
-                  children: snapshot.data!
-                      .map(
-                        (c) => ListTile(
-                          title: Text(c.nome),
-                          subtitle: Text(c.telefone),
-                        ),
-                      )
-                      .toList(),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      ClientesController.remover(cliente.id);
+                      atualizarTela();
+                    },
+                  ),
                 );
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 }

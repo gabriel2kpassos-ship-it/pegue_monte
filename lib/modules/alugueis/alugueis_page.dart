@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/aluguel_service.dart';
-import '../../core/services/cliente_service.dart';
-import '../../core/services/kit_service.dart';
-import '../../core/services/produto_service.dart';
-
 import '../../models/aluguel_model.dart';
-import '../../models/cliente_model.dart';
-import '../../models/kit_model.dart';
+import 'aluguel_form_page.dart';
 
 class AlugueisPage extends StatefulWidget {
   const AlugueisPage({super.key});
@@ -17,111 +12,90 @@ class AlugueisPage extends StatefulWidget {
 }
 
 class _AlugueisPageState extends State<AlugueisPage> {
-  final aluguelService = AluguelService();
-  final clienteService = ClienteService();
-  final kitService = KitService();
-  final produtoService = ProdutoService();
+  final service = AluguelService();
+
+  Future<void> confirmarDevolucao(AluguelModel aluguel) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar devolução'),
+        content: const Text(
+          'Deseja realmente finalizar este aluguel e devolver os itens ao estoque?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await service.finalizarAluguel(aluguel);
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Aluguéis')),
-      body: StreamBuilder<List<AluguelModel>>(
-        stream: aluguelService.listar(),
-        builder: (_, aluguelSnap) {
-          if (aluguelSnap.connectionState ==
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AluguelFormPage()),
+          );
+          if (result == true) setState(() {});
+        },
+      ),
+      body: FutureBuilder<List<AluguelModel>>(
+        future: service.listar(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState ==
               ConnectionState.waiting) {
             return const Center(
-                child: CircularProgressIndicator());
-          }
-
-          if (!aluguelSnap.hasData ||
-              aluguelSnap.data!.isEmpty) {
-            return const Center(
-              child: Text('Nenhum aluguel registrado'),
+              child: CircularProgressIndicator(),
             );
           }
 
-          return StreamBuilder<List<ClienteModel>>(
-            stream: clienteService.listar(),
-            builder: (_, clienteSnap) {
-              if (!clienteSnap.hasData) {
-                return const Center(
-                    child: CircularProgressIndicator());
-              }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(
+              child: Text('Nenhum aluguel'),
+            );
+          }
 
-              final clientes = {
-                for (final c in clienteSnap.data!) c.id: c
-              };
+          final alugueis = snapshot.data!;
 
-              return StreamBuilder<List<KitModel>>(
-                stream: kitService.listar(),
-                builder: (_, kitSnap) {
-                  if (!kitSnap.hasData) {
-                    return const Center(
-                        child: CircularProgressIndicator());
-                  }
+          return ListView.separated(
+            itemCount: alugueis.length,
+            separatorBuilder: (_, __) => const Divider(),
+            itemBuilder: (context, index) {
+              final aluguel = alugueis[index];
+              final ativo =
+                  aluguel.status == StatusAluguel.ativo;
 
-                  final kits = {
-                    for (final k in kitSnap.data!) k.id: k
-                  };
-
-                  return ListView.builder(
-                    itemCount: aluguelSnap.data!.length,
-                    itemBuilder: (_, i) {
-                      final aluguel = aluguelSnap.data![i];
-                      final cliente =
-                          clientes[aluguel.clienteId];
-                      final kit = kits[aluguel.kitId];
-
-                      return Card(
-                        margin: const EdgeInsets.all(8),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                cliente?.nome ??
-                                    'Cliente removido',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Kit: ${kit?.nome ?? 'Kit removido'}',
-                              ),
-                              const SizedBox(height: 6),
-                              if (kit != null)
-                                Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: kit.itens.map((item) {
-                                    final produto =
-                                        produtoService.getById(
-                                            item.produtoId);
-                                    return Text(
-                                      '- ${produto?.nome ?? 'Produto removido'} '
-                                      '(Qtd: ${item.quantidade})',
-                                    );
-                                  }).toList(),
-                                ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Data: ${aluguel.data.day}/${aluguel.data.month}/${aluguel.data.year}',
-                                style: const TextStyle(
-                                    color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
+              return ListTile(
+                title: Text(aluguel.clienteNome),
+                subtitle: Text(
+                  '${aluguel.kitNome} • R\$ ${aluguel.valor.toStringAsFixed(2)}',
+                ),
+                trailing: ativo
+                    ? ElevatedButton(
+                        onPressed: () =>
+                            confirmarDevolucao(aluguel),
+                        child: const Text('Devolver'),
+                      )
+                    : const Chip(
+                        label: Text('Finalizado'),
+                        backgroundColor: Colors.green,
+                      ),
               );
             },
           );

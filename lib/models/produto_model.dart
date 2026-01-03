@@ -1,26 +1,37 @@
 class ProdutoModel {
   final String id;
   final String nome;
-  final int estoque;
+  final int quantidade;
 
   ProdutoModel({
     required this.id,
     required this.nome,
-    required this.estoque,
+    required this.quantidade,
   });
 
-  factory ProdutoModel.fromMap(String id, Map<String, dynamic> map) {
+  ProdutoModel copyWith({
+    String? nome,
+    int? quantidade,
+  }) {
     return ProdutoModel(
       id: id,
-      nome: map['nome'] as String,
-      estoque: map['estoque'] as int,
+      nome: nome ?? this.nome,
+      quantidade: quantidade ?? this.quantidade,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'nome': nome,
-      'estoque': estoque,
+      'quantidade': quantidade,
     };
+  }
+
+  factory ProdutoModel.fromMap(String id, Map<String, dynamic> map) {
+    return ProdutoModel(
+      id: id,
+      nome: map['nome'],
+      quantidade: map['quantidade'],
+    );
   }
 }
