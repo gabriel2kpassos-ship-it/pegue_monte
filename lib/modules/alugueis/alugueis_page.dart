@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../../core/services/aluguel_service.dart';
 import '../../models/aluguel_model.dart';
@@ -12,15 +13,24 @@ class AlugueisPage extends StatefulWidget {
 }
 
 class _AlugueisPageState extends State<AlugueisPage> {
-  final service = AluguelService();
+  final _aluguelService = AluguelService();
+  final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
 
-  Future<void> confirmarDevolucao(AluguelModel aluguel) async {
-    final confirmar = await showDialog<bool>(
+  void _novoAluguel() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AluguelFormPage()),
+    );
+    setState(() {});
+  }
+
+  void _confirmarDevolucao(AluguelModel aluguel) async {
+    final confirmado = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Confirmar devolução'),
         content: const Text(
-          'Deseja realmente finalizar este aluguel e devolver os itens ao estoque?',
+          'Deseja finalizar este aluguel e devolver os produtos ao estoque?',
         ),
         actions: [
           TextButton(
@@ -35,72 +45,85 @@ class _AlugueisPageState extends State<AlugueisPage> {
       ),
     );
 
-    if (confirmar == true) {
-      await service.finalizarAluguel(aluguel);
+    if (confirmado == true) {
+      _aluguelService.finalizarAluguel(aluguel.id);
       setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aluguel finalizado')),
+      );
     }
+  }
+
+  bool _estaAtrasado(AluguelModel aluguel) {
+    final hoje = DateTime.now();
+    return aluguel.status == AluguelStatus.ativo &&
+        hoje.isAfter(aluguel.dataDevolucao);
   }
 
   @override
   Widget build(BuildContext context) {
+    final alugueis = _aluguelService.listar();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Aluguéis')),
       floatingActionButton: FloatingActionButton(
+        onPressed: _novoAluguel,
         child: const Icon(Icons.add),
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const AluguelFormPage()),
-          );
-          if (result == true) setState(() {});
-        },
       ),
-      body: FutureBuilder<List<AluguelModel>>(
-        future: service.listar(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState ==
-              ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+      body: alugueis.isEmpty
+          ? const Center(child: Text('Nenhum aluguel cadastrado'))
+          : ListView.builder(
+              itemCount: alugueis.length,
+              itemBuilder: (_, index) {
+                final aluguel = alugueis[index];
+                final ativo = aluguel.status == AluguelStatus.ativo;
+                final atrasado = _estaAtrasado(aluguel);
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text('Nenhum aluguel'),
-            );
-          }
-
-          final alugueis = snapshot.data!;
-
-          return ListView.separated(
-            itemCount: alugueis.length,
-            separatorBuilder: (_, __) => const Divider(),
-            itemBuilder: (context, index) {
-              final aluguel = alugueis[index];
-              final ativo =
-                  aluguel.status == StatusAluguel.ativo;
-
-              return ListTile(
-                title: Text(aluguel.clienteNome),
-                subtitle: Text(
-                  '${aluguel.kitNome} • R\$ ${aluguel.valor.toStringAsFixed(2)}',
-                ),
-                trailing: ativo
-                    ? ElevatedButton(
-                        onPressed: () =>
-                            confirmarDevolucao(aluguel),
-                        child: const Text('Devolver'),
-                      )
-                    : const Chip(
-                        label: Text('Finalizado'),
-                        backgroundColor: Colors.green,
-                      ),
-              );
-            },
-          );
-        },
-      ),
+                return Card(
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  color: atrasado ? Colors.red.shade50 : null,
+                  child: ListTile(
+                    title: Text(aluguel.clienteNome),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Kit: ${aluguel.kitNome}'),
+                        Text(
+                          'Período: '
+                          '${_dateFormat.format(aluguel.dataInicio)} '
+                          '→ ${_dateFormat.format(aluguel.dataDevolucao)}',
+                        ),
+                        if (atrasado)
+                          const Text(
+                            '⚠ Aluguel em atraso',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        else
+                          Text(
+                            'Status: ${ativo ? 'Ativo' : 'Finalizado'}',
+                            style: TextStyle(
+                              color: ativo ? Colors.green : Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                    trailing: ativo
+                        ? IconButton(
+                            icon: const Icon(Icons.assignment_return),
+                            tooltip: 'Finalizar aluguel',
+                            onPressed: () =>
+                                _confirmarDevolucao(aluguel),
+                          )
+                        : const Icon(Icons.check, color: Colors.grey),
+                  ),
+                );
+              },
+            ),
     );
   }
 }

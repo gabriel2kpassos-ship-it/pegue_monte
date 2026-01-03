@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../core/services/kit_service.dart';
-import '../../models/kit_item_model.dart';
 import '../../models/kit_model.dart';
+import '../../models/kit_item_model.dart';
 import '../../models/produto_model.dart';
-import '../produtos/produtos_controller.dart';
+import 'kits_controller.dart';
 
 class KitFormPage extends StatefulWidget {
   final KitModel? kit;
@@ -16,195 +15,181 @@ class KitFormPage extends StatefulWidget {
 }
 
 class _KitFormPageState extends State<KitFormPage> {
-  late TextEditingController nomeController;
-  late TextEditingController precoController;
-  late List<KitItemModel> itens;
-  bool salvando = false;
+  final _formKey = GlobalKey<FormState>();
+  final _controller = KitsController();
+
+  late final TextEditingController _nomeController;
+  late final TextEditingController _precoController;
+
+  final List<KitItemModel> _itens = [];
+
+  ProdutoModel? _produtoSelecionado;
+  final TextEditingController _quantidadeController =
+      TextEditingController();
+
+  bool _salvando = false;
 
   @override
   void initState() {
     super.initState();
-    nomeController =
-        TextEditingController(text: widget.kit?.nome ?? '');
-    precoController =
-        TextEditingController(text: widget.kit?.preco.toString() ?? '');
-    itens = List.from(widget.kit?.itens ?? []);
-  }
-
-  void adicionarProduto(ProdutoModel produto) {
-    final quantidadeNoKit = itens
-        .where((i) => i.produtoId == produto.id)
-        .fold<int>(0, (s, i) => s + i.quantidade);
-
-    if (quantidadeNoKit >= produto.quantidade) {
-      _alerta('Estoque insuficiente (${produto.quantidade})');
-      return;
-    }
-
-    final index =
-        itens.indexWhere((i) => i.produtoId == produto.id);
-
-    setState(() {
-      if (index >= 0) {
-        itens[index] =
-            itens[index].copyWith(quantidade: itens[index].quantidade + 1);
-      } else {
-        itens.add(
-          KitItemModel(
-            produtoId: produto.id,
-            produtoNome: produto.nome,
-            quantidade: 1,
-          ),
-        );
-      }
-    });
-  }
-
-  void alterarQuantidade(KitItemModel item, int novaQtd) {
-    if (novaQtd < 1) return;
-
-    final produto = ProdutosController.produtos
-        .firstWhere((p) => p.id == item.produtoId);
-
-    if (novaQtd > produto.quantidade) {
-      _alerta('Estoque disponível: ${produto.quantidade}');
-      return;
-    }
-
-    setState(() {
-      final index = itens.indexOf(item);
-      itens[index] = item.copyWith(quantidade: novaQtd);
-    });
-  }
-
-  Future<void> salvar() async {
-    if (salvando) return;
-
-    if (nomeController.text.trim().isEmpty) {
-      _alerta('Informe o nome do kit');
-      return;
-    }
-
-    final preco = double.tryParse(precoController.text);
-
-    if (preco == null || preco < 0) {
-      _alerta('Informe um preço válido');
-      return;
-    }
-
-    if (itens.isEmpty) {
-      _alerta('Adicione pelo menos um produto');
-      return;
-    }
-
-    setState(() => salvando = true);
-
-    try {
-      final kit = KitModel(
-        id: widget.kit?.id,
-        nome: nomeController.text.trim(),
-        preco: preco,
-        itens: itens,
-      );
-
-      await KitService().salvar(kit);
-
-      if (!mounted) return;
-      Navigator.pop(context, true);
-    } catch (e) {
-      _alerta('Erro ao salvar kit\n$e');
-    } finally {
-      if (mounted) setState(() => salvando = false);
-    }
-  }
-
-  void _alerta(String msg) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Atenção'),
-        content: Text(msg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
+    _nomeController = TextEditingController(text: widget.kit?.nome ?? '');
+    _precoController = TextEditingController(
+      text: widget.kit?.preco.toString() ?? '',
     );
+    if (widget.kit != null) {
+      _itens.addAll(widget.kit!.itens);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _precoController.dispose();
+    _quantidadeController.dispose();
+    super.dispose();
+  }
+
+  void _adicionarItem() {
+    if (_produtoSelecionado == null) return;
+
+    final quantidade = int.tryParse(_quantidadeController.text) ?? 0;
+    if (quantidade <= 0) return;
+
+    if (!_controller.podeAdicionarItem(
+      _produtoSelecionado!.id,
+      quantidade,
+    )) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Estoque insuficiente')),
+      );
+      return;
+    }
+
+    setState(() {
+      _itens.add(
+        KitItemModel(
+          produtoId: _produtoSelecionado!.id,
+          produtoNome: _produtoSelecionado!.nome,
+          quantidade: quantidade,
+        ),
+      );
+      _produtoSelecionado = null;
+      _quantidadeController.clear();
+    });
+  }
+
+  void _salvar() async {
+    if (!_formKey.currentState!.validate() || _itens.isEmpty) return;
+
+    setState(() => _salvando = true);
+
+    final kit = KitModel(
+      id: widget.kit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      nome: _nomeController.text.trim(),
+      preco: double.parse(_precoController.text),
+      itens: List.from(_itens),
+    );
+
+    _controller.salvar(kit);
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kit salvo com sucesso')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final produtos = _controller.produtoService.listar();
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Kit')),
+      appBar: AppBar(
+        title: Text(widget.kit == null ? 'Novo Kit' : 'Editar Kit'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: nomeController,
-              decoration:
-                  const InputDecoration(labelText: 'Nome do Kit'),
-            ),
-            TextField(
-              controller: precoController,
-              decoration:
-                  const InputDecoration(labelText: 'Preço do Kit'),
-              keyboardType: TextInputType.number,
-            ),
-            const Divider(),
-            Expanded(
-              child: ListView(
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              TextFormField(
+                controller: _nomeController,
+                decoration: const InputDecoration(labelText: 'Nome do Kit'),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Informe o nome' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _precoController,
+                decoration: const InputDecoration(labelText: 'Preço'),
+                keyboardType: TextInputType.number,
+                validator: (v) =>
+                    v == null || double.tryParse(v) == null
+                        ? 'Preço inválido'
+                        : null,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Itens do Kit',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Row(
                 children: [
-                  const Text('Produtos'),
-                  ...ProdutosController.produtos.map(
-                    (p) => ListTile(
-                      title: Text(p.nome),
-                      subtitle:
-                          Text('Estoque: ${p.quantidade}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => adicionarProduto(p),
-                      ),
+                  Expanded(
+                    child: DropdownButtonFormField<ProdutoModel>(
+                      initialValue: _produtoSelecionado,
+                      items: produtos
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p,
+                              child: Text('${p.nome} (Estoque: ${p.estoque})'),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _produtoSelecionado = value);
+                      },
+                      decoration:
+                          const InputDecoration(labelText: 'Produto'),
                     ),
                   ),
-                  const Divider(),
-                  const Text('Itens do Kit'),
-                  ...itens.map(
-                    (i) => ListTile(
-                      title: Text(i.produtoNome),
-                      subtitle: Text('Qtd: ${i.quantidade}'),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: () =>
-                                alterarQuantidade(i, i.quantidade - 1),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: () =>
-                                alterarQuantidade(i, i.quantidade + 1),
-                          ),
-                        ],
-                      ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 80,
+                    child: TextField(
+                      controller: _quantidadeController,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          const InputDecoration(labelText: 'Qtd'),
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: _adicionarItem,
                   ),
                 ],
               ),
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: salvando ? null : salvar,
-                child: salvando
+              const SizedBox(height: 16),
+              ..._itens.map(
+                (item) => ListTile(
+                  title: Text(item.produtoNome),
+                  trailing: Text('Qtd: ${item.quantidade}'),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _salvando ? null : _salvar,
+                child: _salvando
                     ? const CircularProgressIndicator()
                     : const Text('Salvar Kit'),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

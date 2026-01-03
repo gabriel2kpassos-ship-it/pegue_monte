@@ -12,93 +12,100 @@ class DashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pegue & Monte'),
+        title: const Text('Sistema Viva Encante'),
         centerTitle: true,
       ),
-      body: GridView.count(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        children: [
-          _DashboardCard(
-            title: 'Clientes',
-            icon: Icons.people,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ClientesPage()),
-              );
-            },
-          ),
-          _DashboardCard(
-            title: 'Produtos',
-            icon: Icons.inventory,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProdutosPage()),
-              );
-            },
-          ),
-          _DashboardCard(
-            title: 'Kits',
-            icon: Icons.widgets,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KitsPage()),
-              );
-            },
-          ),
-          _DashboardCard(
-            title: 'Aluguéis',
-            icon: Icons.assignment,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AlugueisPage()),
-              );
-            },
-          ),
-        ],
+        child: GridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          children: [
+            _DashboardCard(
+              icon: Icons.people,
+              label: 'Clientes',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ClientesPage(),
+                  ),
+                );
+              },
+            ),
+            _DashboardCard(
+              icon: Icons.inventory_2,
+              label: 'Produtos',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ProdutosPage(),
+                  ),
+                );
+              },
+            ),
+            _DashboardCard(
+              icon: Icons.widgets,
+              label: 'Kits',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const KitsPage(),
+                  ),
+                );
+              },
+            ),
+            _DashboardCard(
+              icon: Icons.assignment,
+              label: 'Aluguéis',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AlugueisPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _DashboardCard extends StatelessWidget {
-  final String title;
   final IconData icon;
+  final String label;
   final VoidCallback onTap;
 
   const _DashboardCard({
-    required this.title,
     required this.icon,
+    required this.label,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: Theme.of(context).primaryColor),
+            Icon(icon, size: 48),
             const SizedBox(height: 12),
             Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              label,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
           ],
         ),

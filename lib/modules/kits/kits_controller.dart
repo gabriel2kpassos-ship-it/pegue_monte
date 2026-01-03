@@ -1,23 +1,44 @@
+import '../../core/services/kit_service.dart';
+import '../../core/services/produto_service.dart';
 import '../../models/kit_model.dart';
-import 'dart:math';
+import '../../models/kit_item_model.dart';
 
 class KitsController {
-  static final List<KitModel> kits = [];
+  final KitService _kitService = KitService();
+  final ProdutoService _produtoService = ProdutoService();
 
-  static void adicionar(KitModel kit) {
-    kits.add(kit);
+  List<KitModel> listar() {
+    return _kitService.listar();
   }
 
-  static void atualizar(KitModel kit) {
-    final index = kits.indexWhere((k) => k.id == kit.id);
-    kits[index] = kit;
+  void salvar(KitModel kit) {
+    final existente = _kitService.obterPorId(kit.id);
+    if (existente == null) {
+      _kitService.adicionar(kit);
+    } else {
+      _kitService.atualizar(kit);
+    }
   }
 
-  static void remover(String id) {
-    kits.removeWhere((k) => k.id == id);
+  void remover(String id) {
+    _kitService.remover(id);
   }
 
-  static String gerarId() {
-    return Random().nextInt(999999).toString();
+  bool podeAdicionarItem(String produtoId, int quantidade) {
+    return _produtoService.temEstoque(produtoId, quantidade);
+  }
+
+  ProdutoService get produtoService => _produtoService;
+
+  KitItemModel criarItem({
+    required String produtoId,
+    required String produtoNome,
+    required int quantidade,
+  }) {
+    return KitItemModel(
+      produtoId: produtoId,
+      produtoNome: produtoNome,
+      quantidade: quantidade,
+    );
   }
 }

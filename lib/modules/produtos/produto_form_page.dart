@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/produto_model.dart';
 import 'produtos_controller.dart';
 
@@ -13,41 +14,50 @@ class ProdutoFormPage extends StatefulWidget {
 
 class _ProdutoFormPageState extends State<ProdutoFormPage> {
   final _formKey = GlobalKey<FormState>();
+  final _controller = ProdutosController();
 
-  late TextEditingController nomeController;
-  late TextEditingController quantidadeController;
+  late final TextEditingController _nomeController;
+  late final TextEditingController _estoqueController;
+
+  bool _salvando = false;
 
   @override
   void initState() {
-    nomeController = TextEditingController(text: widget.produto?.nome);
-    quantidadeController =
-        TextEditingController(text: widget.produto?.quantidade.toString());
     super.initState();
+    _nomeController = TextEditingController(text: widget.produto?.nome ?? '');
+    _estoqueController = TextEditingController(
+      text: widget.produto?.estoque.toString() ?? '',
+    );
   }
 
-  void salvar() {
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _estoqueController.dispose();
+    super.dispose();
+  }
+
+  void _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final quantidade = int.parse(quantidadeController.text);
+    setState(() => _salvando = true);
 
-    if (widget.produto == null) {
-      ProdutosController.adicionar(
-        ProdutoModel(
-          id: ProdutosController.gerarId(),
-          nome: nomeController.text,
-          quantidade: quantidade,
-        ),
-      );
-    } else {
-      ProdutosController.atualizar(
-        widget.produto!.copyWith(
-          nome: nomeController.text,
-          quantidade: quantidade,
-        ),
+    final produto = ProdutoModel(
+      id: widget.produto?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      nome: _nomeController.text.trim(),
+      estoque: int.parse(_estoqueController.text),
+    );
+
+    _controller.salvar(produto);
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Produto salvo com sucesso')),
       );
     }
-
-    Navigator.pop(context, true);
   }
 
   @override
@@ -64,30 +74,34 @@ class _ProdutoFormPageState extends State<ProdutoFormPage> {
           child: Column(
             children: [
               TextFormField(
-                controller: nomeController,
-                decoration: const InputDecoration(labelText: 'Nome do produto'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Informe o nome' : null,
+                controller: _nomeController,
+                decoration: const InputDecoration(labelText: 'Nome'),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Informe o nome' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: quantidadeController,
+                controller: _estoqueController,
                 decoration:
                     const InputDecoration(labelText: 'Quantidade em estoque'),
                 keyboardType: TextInputType.number,
-                validator: (v) =>
-                    v == null || int.tryParse(v) == null
-                        ? 'Quantidade inválida'
-                        : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Informe o estoque';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Valor inválido';
+                  }
+                  return null;
+                },
               ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: salvar,
-                  child: const Text('Salvar'),
-                ),
-              )
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _salvando ? null : _salvar,
+                child: _salvando
+                    ? const CircularProgressIndicator()
+                    : const Text('Salvar'),
+              ),
             ],
           ),
         ),

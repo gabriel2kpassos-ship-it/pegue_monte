@@ -1,34 +1,36 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/cliente_model.dart';
 
 class ClienteService {
-  final CollectionReference<Map<String, dynamic>> _collection;
+  ClienteService._internal();
+  static final ClienteService _instance = ClienteService._internal();
+  factory ClienteService() => _instance;
 
-  ClienteService(FirebaseFirestore firestore)
-      : _collection = firestore.collection('clientes');
+  final List<ClienteModel> _clientes = [];
 
-  Stream<List<ClienteModel>> listar() {
-    return _collection.snapshots().map((snapshot) {
-      return snapshot.docs
-          .map(
-            (doc) => ClienteModel.fromMap(doc.id, doc.data()),
-          )
-          .toList();
-    });
+  List<ClienteModel> listar() {
+    return List.unmodifiable(_clientes);
   }
 
-  Future<void> adicionar(String nome, String telefone) async {
-    await _collection.add({
-      'nome': nome,
-      'telefone': telefone,
-    });
+  void adicionar(ClienteModel cliente) {
+    _clientes.add(cliente);
   }
 
-  Future<void> atualizar(ClienteModel cliente) async {
-    await _collection.doc(cliente.id).update(cliente.toMap());
+  void atualizar(ClienteModel cliente) {
+    final index = _clientes.indexWhere((c) => c.id == cliente.id);
+    if (index >= 0) {
+      _clientes[index] = cliente;
+    }
   }
 
-  Future<void> remover(String id) async {
-    await _collection.doc(id).delete();
+  void remover(String id) {
+    _clientes.removeWhere((c) => c.id == id);
+  }
+
+  ClienteModel? obterPorId(String id) {
+    try {
+      return _clientes.firstWhere((c) => c.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 }

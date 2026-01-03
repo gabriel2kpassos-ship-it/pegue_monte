@@ -1,35 +1,45 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static ThemeData theme = ThemeData(
-    useMaterial3: true,
-    colorSchemeSeed: Colors.indigo,
-    scaffoldBackgroundColor: Colors.grey.shade100,
+  static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: Colors.indigo,
+      brightness: Brightness.light,
+    );
 
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
-      backgroundColor: Colors.white,
-      foregroundColor: Colors.black,
-      elevation: 0,
-    ),
-
-    // 🔧 CORREÇÃO AQUI
-    cardTheme: const CardThemeData(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        centerTitle: true,
+        elevation: 0,
       ),
-    ),
-
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(
-      backgroundColor: Colors.indigo,
-      foregroundColor: Colors.white,
-    ),
-
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.all(Radius.circular(12)),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
       ),
-    ),
-  );
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
 }

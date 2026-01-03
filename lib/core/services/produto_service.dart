@@ -1,43 +1,60 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/produto_model.dart';
 
 class ProdutoService {
-  final _collection =
-      FirebaseFirestore.instance.collection('produtos');
+  ProdutoService._internal();
+  static final ProdutoService _instance = ProdutoService._internal();
+  factory ProdutoService() => _instance;
 
-  final Map<String, ProdutoModel> cacheProdutos = {};
+  final List<ProdutoModel> _produtos = [];
 
-  Stream<List<ProdutoModel>> listar() {
-    return _collection.snapshots().map((snapshot) {
-      final produtos = snapshot.docs
-          .map((doc) =>
-              ProdutoModel.fromMap(doc.id, doc.data()))
-          .toList();
-
-      for (var p in produtos) {
-        cacheProdutos[p.id] = p;
-      }
-
-      return produtos;
-    });
+  List<ProdutoModel> listar() {
+    return List.unmodifiable(_produtos);
   }
 
-  ProdutoModel? getById(String id) {
-    return cacheProdutos[id];
+  void adicionar(ProdutoModel produto) {
+    _produtos.add(produto);
   }
 
-  Future<void> adicionar(String nome, int estoque) async {
-    await _collection.add({
-      'nome': nome,
-      'estoque': estoque,
-    });
+  void atualizar(ProdutoModel produto) {
+    final index = _produtos.indexWhere((p) => p.id == produto.id);
+    if (index >= 0) {
+      _produtos[index] = produto;
+    }
   }
 
-  Future<void> atualizar(ProdutoModel produto) async {
-    await _collection.doc(produto.id).update(produto.toMap());
+  void remover(String id) {
+    _produtos.removeWhere((p) => p.id == id);
   }
 
-  Future<void> remover(String id) async {
-    await _collection.doc(id).delete();
+  ProdutoModel? obterPorId(String id) {
+    try {
+      return _produtos.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool temEstoque(String produtoId, int quantidade) {
+    final produto = obterPorId(produtoId);
+    if (produto == null) return false;
+    return produto.estoque >= quantidade;
+  }
+
+  void baixarEstoque(String produtoId, int quantidade) {
+    final produto = obterPorId(produtoId);
+    if (produto == null) return;
+
+    atualizar(produto.copyWith(
+      estoque: produto.estoque - quantidade,
+    ));
+  }
+
+  void devolverEstoque(String produtoId, int quantidade) {
+    final produto = obterPorId(produtoId);
+    if (produto == null) return;
+
+    atualizar(produto.copyWith(
+      estoque: produto.estoque + quantidade,
+    ));
   }
 }

@@ -1,23 +1,27 @@
+import '../../core/services/produto_service.dart';
 import '../../models/produto_model.dart';
-import 'dart:math';
 
 class ProdutosController {
-  static final List<ProdutoModel> produtos = [];
+  final ProdutoService _service = ProdutoService();
 
-  static void adicionar(ProdutoModel produto) {
-    produtos.add(produto);
+  List<ProdutoModel> listar() {
+    return _service.listar();
   }
 
-  static void atualizar(ProdutoModel produto) {
-    final index = produtos.indexWhere((p) => p.id == produto.id);
-    produtos[index] = produto;
+  void salvar(ProdutoModel produto) {
+    final existente = _service.obterPorId(produto.id);
+    if (existente == null) {
+      _service.adicionar(produto);
+    } else {
+      _service.atualizar(produto);
+    }
   }
 
-  static void remover(String id) {
-    produtos.removeWhere((p) => p.id == id);
+  void remover(String id) {
+    _service.remover(id);
   }
 
-  static String gerarId() {
-    return Random().nextInt(999999).toString();
+  ProdutoModel? obterPorId(String id) {
+    return _service.obterPorId(id);
   }
 }

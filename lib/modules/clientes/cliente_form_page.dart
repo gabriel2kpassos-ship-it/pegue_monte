@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-
-import '../../models/cliente_model.dart';
 import 'clientes_controller.dart';
+import '../../models/cliente_model.dart';
 import '../../core/utils/phone_input_formatter.dart';
 
 class ClienteFormPage extends StatefulWidget {
@@ -15,46 +14,49 @@ class ClienteFormPage extends StatefulWidget {
 
 class _ClienteFormPageState extends State<ClienteFormPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController nomeController;
-  late TextEditingController telefoneController;
+  final _controller = ClientesController();
+
+  late final TextEditingController _nomeController;
+  late final TextEditingController _telefoneController;
+
+  bool _salvando = false;
 
   @override
   void initState() {
     super.initState();
-
-    nomeController = TextEditingController(text: widget.cliente?.nome);
-
-    // Se estiver editando, o telefone vem SEM formatação (só números)
-    // A máscara aplica a formatação automaticamente
-    telefoneController = TextEditingController(
-      text: widget.cliente?.telefone,
-    );
+    _nomeController = TextEditingController(text: widget.cliente?.nome ?? '');
+    _telefoneController =
+        TextEditingController(text: widget.cliente?.telefone ?? '');
   }
 
-  void salvar() {
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _telefoneController.dispose();
+    super.dispose();
+  }
+
+  void _salvar() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final telefoneNumerico =
-        telefoneController.text.replaceAll(RegExp(r'\D'), '');
+    setState(() => _salvando = true);
 
-    if (widget.cliente == null) {
-      ClientesController.adicionar(
-        ClienteModel(
-          id: ClientesController.gerarId(),
-          nome: nomeController.text.trim(),
-          telefone: telefoneNumerico,
-        ),
-      );
-    } else {
-      ClientesController.atualizar(
-        widget.cliente!.copyWith(
-          nome: nomeController.text.trim(),
-          telefone: telefoneNumerico,
-        ),
+    final cliente = ClienteModel(
+      id: widget.cliente?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      nome: _nomeController.text.trim(),
+      telefone: _telefoneController.text.replaceAll(RegExp(r'\D'), ''),
+    );
+
+    _controller.salvar(cliente);
+
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cliente salvo com sucesso')),
       );
     }
-
-    Navigator.pop(context, true);
   }
 
   @override
@@ -70,41 +72,27 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
           child: Column(
             children: [
               TextFormField(
-                controller: nomeController,
+                controller: _nomeController,
                 decoration: const InputDecoration(labelText: 'Nome'),
-                validator: (v) =>
-                    v == null || v.trim().isEmpty ? 'Informe o nome' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Informe o nome' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: telefoneController,
+                controller: _telefoneController,
+                decoration: const InputDecoration(labelText: 'Telefone'),
                 keyboardType: TextInputType.phone,
-                inputFormatters: [phoneInputFormatter],
-                decoration: const InputDecoration(
-                  labelText: 'Telefone',
-                  hintText: '(11) 91234-5678',
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'Informe o telefone';
-                  }
-
-                  final numeric = v.replaceAll(RegExp(r'\D'), '');
-                  if (numeric.length != 11) {
-                    return 'Telefone inválido';
-                  }
-
-                  return null;
-                },
+                inputFormatters: [PhoneInputFormatter()],
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Informe o telefone' : null,
               ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: salvar,
-                  child: const Text('Salvar'),
-                ),
-              )
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _salvando ? null : _salvar,
+                child: _salvando
+                    ? const CircularProgressIndicator()
+                    : const Text('Salvar'),
+              ),
             ],
           ),
         ),

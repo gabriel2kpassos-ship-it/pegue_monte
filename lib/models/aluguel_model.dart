@@ -1,6 +1,4 @@
-import 'kit_item_model.dart';
-
-enum StatusAluguel { ativo, finalizado }
+enum AluguelStatus { ativo, finalizado }
 
 class AluguelModel {
   final String id;
@@ -8,11 +6,11 @@ class AluguelModel {
   final String clienteNome;
   final String kitId;
   final String kitNome;
-  final double valor;
+  final double kitPreco;
+  final List itens;
   final DateTime dataInicio;
-  final DateTime dataFim;
-  final List<KitItemModel> itens;
-  final StatusAluguel status;
+  final DateTime dataDevolucao;
+  final AluguelStatus status;
 
   AluguelModel({
     required this.id,
@@ -20,60 +18,67 @@ class AluguelModel {
     required this.clienteNome,
     required this.kitId,
     required this.kitNome,
-    required this.valor,
-    required this.dataInicio,
-    required this.dataFim,
+    required this.kitPreco,
     required this.itens,
+    required this.dataInicio,
+    required this.dataDevolucao,
     required this.status,
   });
 
-  factory AluguelModel.fromMap(String id, Map<String, dynamic> map) {
+  AluguelModel copyWith({
+    String? id,
+    String? clienteId,
+    String? clienteNome,
+    String? kitId,
+    String? kitNome,
+    double? kitPreco,
+    List? itens,
+    DateTime? dataInicio,
+    DateTime? dataDevolucao,
+    AluguelStatus? status,
+  }) {
     return AluguelModel(
-      id: id,
-      clienteId: map['clienteId'],
-      clienteNome: map['clienteNome'],
-      kitId: map['kitId'],
-      kitNome: map['kitNome'],
-      valor: (map['valor'] ?? 0).toDouble(),
-      dataInicio: DateTime.parse(map['dataInicio']),
-      dataFim: DateTime.parse(map['dataFim']),
-      status: map['status'] == 'finalizado'
-          ? StatusAluguel.finalizado
-          : StatusAluguel.ativo,
-      itens: (map['itens'] as List)
-          .map((e) => KitItemModel.fromMap(Map<String, dynamic>.from(e)))
-          .toList(),
+      id: id ?? this.id,
+      clienteId: clienteId ?? this.clienteId,
+      clienteNome: clienteNome ?? this.clienteNome,
+      kitId: kitId ?? this.kitId,
+      kitNome: kitNome ?? this.kitNome,
+      kitPreco: kitPreco ?? this.kitPreco,
+      itens: itens ?? this.itens,
+      dataInicio: dataInicio ?? this.dataInicio,
+      dataDevolucao: dataDevolucao ?? this.dataDevolucao,
+      status: status ?? this.status,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'clienteId': clienteId,
       'clienteNome': clienteNome,
       'kitId': kitId,
       'kitNome': kitNome,
-      'valor': valor,
+      'kitPreco': kitPreco,
+      'itens': itens,
       'dataInicio': dataInicio.toIso8601String(),
-      'dataFim': dataFim.toIso8601String(),
+      'dataDevolucao': dataDevolucao.toIso8601String(),
       'status': status.name,
-      'itens': itens.map((e) => e.toMap()).toList(),
     };
   }
 
-  AluguelModel copyWith({
-    StatusAluguel? status,
-  }) {
+  factory AluguelModel.fromMap(Map<String, dynamic> map) {
     return AluguelModel(
-      id: id,
-      clienteId: clienteId,
-      clienteNome: clienteNome,
-      kitId: kitId,
-      kitNome: kitNome,
-      valor: valor,
-      dataInicio: dataInicio,
-      dataFim: dataFim,
-      itens: itens,
-      status: status ?? this.status,
+      id: map['id'],
+      clienteId: map['clienteId'],
+      clienteNome: map['clienteNome'],
+      kitId: map['kitId'],
+      kitNome: map['kitNome'],
+      kitPreco: (map['kitPreco'] as num).toDouble(),
+      itens: map['itens'],
+      dataInicio: DateTime.parse(map['dataInicio']),
+      dataDevolucao: DateTime.parse(map['dataDevolucao']),
+      status: AluguelStatus.values
+          .firstWhere((e) => e.name == map['status']),
     );
   }
 }

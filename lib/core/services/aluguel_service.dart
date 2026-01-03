@@ -1,74 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../models/aluguel_model.dart';
-import '../../models/produto_model.dart';
+import '../../models/kit_item_model.dart';
+import 'produto_service.dart';
 
 class AluguelService {
-  final _alugueis =
-      FirebaseFirestore.instance.collection('alugueis');
-  final _produtos =
-      FirebaseFirestore.instance.collection('produtos');
+  AluguelService._internal();
+  static final AluguelService _instance = AluguelService._internal();
+  factory AluguelService() => _instance;
 
-  /// LISTAR
-  Future<List<AluguelModel>> listar() async {
-    final snap = await _alugueis.get();
-    return snap.docs
-        .map((d) => AluguelModel.fromMap(d.id, d.data()))
-        .toList();
+  final ProdutoService produtoService = ProdutoService();
+  final List<AluguelModel> _alugueis = [];
+
+  List<AluguelModel> listar() {
+    return List.unmodifiable(_alugueis);
   }
 
-  /// SALVAR + BAIXAR ESTOQUE
-  Future<void> salvarComBaixaEstoque(
-    AluguelModel aluguel,
-    List<ProdutoModel> produtos,
-  ) async {
-    final batch = FirebaseFirestore.instance.batch();
-
-    // salvar aluguel
-    final aluguelRef = _alugueis.doc();
-    batch.set(aluguelRef, aluguel.toMap());
-
-    // baixar estoque
+  void adicionar(AluguelModel aluguel) {
     for (final item in aluguel.itens) {
-      final produto =
-          produtos.firstWhere((p) => p.id == item.produtoId);
-
-      final novoEstoque =
-          produto.quantidade - item.quantidade;
-
-      if (novoEstoque < 0) {
-        throw Exception(
-            'Estoque insuficiente para ${produto.nome}');
-      }
-
-      batch.update(
-        _produtos.doc(produto.id),
-        {'quantidade': novoEstoque},
-      );
+      produtoService.baixarEstoque(item.produtoId, item.quantidade);
     }
-
-    await batch.commit();
+    _alugueis.add(aluguel);
   }
 
-  /// FINALIZAR + DEVOLVER ESTOQUE
-  Future<void> finalizarAluguel(AluguelModel aluguel) async {
-    final batch = FirebaseFirestore.instance.batch();
+  void finalizarAluguel(String aluguelId) {
+    final index = _alugueis.indexWhere((a) => a.id == aluguelId);
+    if (index < 0) return;
 
-    batch.update(
-      _alugueis.doc(aluguel.id),
-      {'status': StatusAluguel.finalizado.name},
-    );
+    final aluguel = _alugueis[index];
+    if (aluguel.status == AluguelStatus.finalizado) return;
 
-    for (final item in aluguel.itens) {
-      batch.update(
-        _produtos.doc(item.produtoId),
-        {
-          'quantidade':
-              FieldValue.increment(item.quantidade),
-        },
-      );
+    for (final KitItemModel item in aluguel.itens) {
+      produtoService.devolverEstoque(item.produtoId, item.quantidade);
     }
 
-    await batch.commit();
+    _alugueis[index] =
+        aluguel.copyWith(status: AluguelStatus.finalizado);
   }
 }

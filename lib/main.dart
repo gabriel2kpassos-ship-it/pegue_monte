@@ -1,43 +1,38 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'firebase_options.dart';
-import 'core/services/cliente_service.dart';
-import 'modules/clientes/clientes_controller.dart';
+import 'core/theme/app_theme.dart';
 import 'modules/dashboard/dashboard_page.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(const MyApp());
+  runApp(const KitRentalApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class KitRentalApp extends StatelessWidget {
+  const KitRentalApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<ClienteService>(
-          create: (_) =>
-              ClienteService(FirebaseFirestore.instance),
-        ),
-        ChangeNotifierProvider<ClientesController>(
-          create: (context) => ClientesController(
-            context.read<ClienteService>(),
-          ),
-        ),
+    return MaterialApp(
+      title: 'Gestão de Kits para Aluguel',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+
+      // ✅ Locale BR
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const [
+        Locale('pt', 'BR'),
       ],
-      child: MaterialApp(
-        title: 'Pegue e Monte',
-        theme: ThemeData(primarySwatch: Colors.blue),
-        home: const DashboardPage(),
-      ),
+
+      // ❗ NÃO usar const aqui
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      home: const DashboardPage(),
     );
   }
 }

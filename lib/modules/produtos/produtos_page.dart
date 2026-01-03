@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'produto_form_page.dart';
+
+import '../../models/produto_model.dart';
 import 'produtos_controller.dart';
+import 'produto_form_page.dart';
 
 class ProdutosPage extends StatefulWidget {
   const ProdutosPage({super.key});
@@ -10,51 +12,57 @@ class ProdutosPage extends StatefulWidget {
 }
 
 class _ProdutosPageState extends State<ProdutosPage> {
-  void atualizarTela() => setState(() {});
+  final controller = ProdutosController();
+
+  void _abrirFormulario([ProdutoModel? produto]) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProdutoFormPage(produto: produto),
+      ),
+    );
+    setState(() {});
+  }
+
+  void _remover(String id) {
+    controller.remover(id);
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Produto removido')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final produtos = ProdutosController.produtos;
+    final produtos = controller.listar();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Produtos')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProdutoFormPage()),
-          );
-          if (result == true) atualizarTela();
-        },
+        onPressed: () => _abrirFormulario(),
         child: const Icon(Icons.add),
       ),
       body: produtos.isEmpty
           ? const Center(child: Text('Nenhum produto cadastrado'))
-          : ListView.separated(
+          : ListView.builder(
               itemCount: produtos.length,
-              separatorBuilder: (_, __) => const Divider(),
-              itemBuilder: (context, index) {
+              itemBuilder: (_, index) {
                 final produto = produtos[index];
-
                 return ListTile(
                   title: Text(produto.nome),
-                  subtitle:
-                      Text('Quantidade em estoque: ${produto.quantidade}'),
-                  onTap: () async {
-                    final result = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProdutoFormPage(produto: produto),
+                  subtitle: Text('Estoque: ${produto.estoque}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _abrirFormulario(produto),
                       ),
-                    );
-                    if (result == true) atualizarTela();
-                  },
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () {
-                      ProdutosController.remover(produto.id);
-                      atualizarTela();
-                    },
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => _remover(produto.id),
+                      ),
+                    ],
                   ),
                 );
               },

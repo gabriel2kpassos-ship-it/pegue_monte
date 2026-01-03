@@ -1,33 +1,27 @@
-import 'package:flutter/material.dart';
 import '../../core/services/cliente_service.dart';
 import '../../models/cliente_model.dart';
 
-class ClientesController extends ChangeNotifier {
-  final ClienteService _service;
+class ClientesController {
+  final ClienteService _service = ClienteService();
 
-  List<ClienteModel> _clientes = [];
-  List<ClienteModel> get clientes => _clientes;
-
-  ClientesController(this._service) {
-    _escutarClientes();
+  List<ClienteModel> listar() {
+    return _service.listar();
   }
 
-  void _escutarClientes() {
-    _service.listar().listen((lista) {
-      _clientes = lista;
-      notifyListeners();
-    });
+  void salvar(ClienteModel cliente) {
+    final existente = _service.obterPorId(cliente.id);
+    if (existente == null) {
+      _service.adicionar(cliente);
+    } else {
+      _service.atualizar(cliente);
+    }
   }
 
-  Future<void> adicionar(String nome, String telefone) async {
-    await _service.adicionar(nome, telefone);
+  void remover(String id) {
+    _service.remover(id);
   }
 
-  Future<void> atualizar(ClienteModel cliente) async {
-    await _service.atualizar(cliente);
-  }
-
-  Future<void> remover(String id) async {
-    await _service.remover(id);
+  ClienteModel? obterPorId(String id) {
+    return _service.obterPorId(id);
   }
 }
