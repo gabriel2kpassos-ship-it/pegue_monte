@@ -1,5 +1,5 @@
-import '../../models/cliente_model.dart';
 import 'dart:math';
+import '../../models/cliente_model.dart';
 
 class ClientesController {
   static final List<ClienteModel> clientes = [];
@@ -10,6 +10,9 @@ class ClientesController {
 
   static void atualizar(ClienteModel cliente) {
     final index = clientes.indexWhere((c) => c.id == cliente.id);
+
+    if (index == -1) return; // evita crash
+
     clientes[index] = cliente;
   }
 
@@ -18,6 +21,9 @@ class ClientesController {
   }
 
   static String gerarId() {
-    return Random().nextInt(999999).toString();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final random = Random().nextInt(9999);
+
+    return '$timestamp$random';
   }
 }

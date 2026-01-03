@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 import '../../models/cliente_model.dart';
 import 'clientes_controller.dart';
+import '../../core/utils/phone_input_formatter.dart';
 
 class ClienteFormPage extends StatefulWidget {
   final ClienteModel? cliente;
@@ -18,28 +21,36 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
 
   @override
   void initState() {
-    nomeController = TextEditingController(text: widget.cliente?.nome);
-    telefoneController =
-        TextEditingController(text: widget.cliente?.telefone);
     super.initState();
+
+    nomeController = TextEditingController(text: widget.cliente?.nome);
+
+    // Se estiver editando, o telefone vem SEM formatação (só números)
+    // A máscara aplica a formatação automaticamente
+    telefoneController = TextEditingController(
+      text: widget.cliente?.telefone,
+    );
   }
 
   void salvar() {
     if (!_formKey.currentState!.validate()) return;
 
+    final telefoneNumerico =
+        telefoneController.text.replaceAll(RegExp(r'\D'), '');
+
     if (widget.cliente == null) {
       ClientesController.adicionar(
         ClienteModel(
           id: ClientesController.gerarId(),
-          nome: nomeController.text,
-          telefone: telefoneController.text,
+          nome: nomeController.text.trim(),
+          telefone: telefoneNumerico,
         ),
       );
     } else {
       ClientesController.atualizar(
         widget.cliente!.copyWith(
-          nome: nomeController.text,
-          telefone: telefoneController.text,
+          nome: nomeController.text.trim(),
+          telefone: telefoneNumerico,
         ),
       );
     }
@@ -63,14 +74,29 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
                 controller: nomeController,
                 decoration: const InputDecoration(labelText: 'Nome'),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Informe o nome' : null,
+                    v == null || v.trim().isEmpty ? 'Informe o nome' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: telefoneController,
-                decoration: const InputDecoration(labelText: 'Telefone'),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Informe o telefone' : null,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [phoneInputFormatter],
+                decoration: const InputDecoration(
+                  labelText: 'Telefone',
+                  hintText: '(11) 91234-5678',
+                ),
+                validator: (v) {
+                  if (v == null || v.isEmpty) {
+                    return 'Informe o telefone';
+                  }
+
+                  final numeric = v.replaceAll(RegExp(r'\D'), '');
+                  if (numeric.length != 11) {
+                    return 'Telefone inválido';
+                  }
+
+                  return null;
+                },
               ),
               const Spacer(),
               SizedBox(

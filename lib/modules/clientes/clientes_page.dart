@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+
 import 'cliente_form_page.dart';
 import 'clientes_controller.dart';
+import '../../core/utils/phone_display_formatter.dart';
 
 class ClientesPage extends StatefulWidget {
   const ClientesPage({super.key});
@@ -38,7 +40,9 @@ class _ClientesPageState extends State<ClientesPage> {
 
                 return ListTile(
                   title: Text(cliente.nome),
-                  subtitle: Text(cliente.telefone),
+                  subtitle: Text(
+                    formatPhone(cliente.telefone),
+                  ),
                   onTap: () async {
                     final result = await Navigator.push(
                       context,
