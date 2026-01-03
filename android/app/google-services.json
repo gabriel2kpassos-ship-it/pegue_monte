@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "67112430404",
+    "project_id": "peguemonte",
+    "storage_bucket": "peguemonte.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:67112430404:android:92757f0cac653720ca0511",
+        "android_client_info": {
+          "package_name": "com.example.pegue_e_monte"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBAnDB4bqm8Cc6vACHxtYxuLn1DMEeQVEw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
