@@ -2,13 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/cliente_model.dart';
 
 class ClienteService {
-  final _collection =
-      FirebaseFirestore.instance.collection('clientes');
+  final CollectionReference<Map<String, dynamic>> _collection;
+
+  ClienteService(FirebaseFirestore firestore)
+      : _collection = firestore.collection('clientes');
 
   Stream<List<ClienteModel>> listar() {
     return _collection.snapshots().map((snapshot) {
       return snapshot.docs
-          .map((doc) => ClienteModel.fromMap(doc.id, doc.data()))
+          .map(
+            (doc) => ClienteModel.fromMap(doc.id, doc.data()),
+          )
           .toList();
     });
   }

@@ -1,29 +1,33 @@
-import 'dart:math';
+import 'package:flutter/material.dart';
+import '../../core/services/cliente_service.dart';
 import '../../models/cliente_model.dart';
 
-class ClientesController {
-  static final List<ClienteModel> clientes = [];
+class ClientesController extends ChangeNotifier {
+  final ClienteService _service;
 
-  static void adicionar(ClienteModel cliente) {
-    clientes.add(cliente);
+  List<ClienteModel> _clientes = [];
+  List<ClienteModel> get clientes => _clientes;
+
+  ClientesController(this._service) {
+    _escutarClientes();
   }
 
-  static void atualizar(ClienteModel cliente) {
-    final index = clientes.indexWhere((c) => c.id == cliente.id);
-
-    if (index == -1) return; // evita crash
-
-    clientes[index] = cliente;
+  void _escutarClientes() {
+    _service.listar().listen((lista) {
+      _clientes = lista;
+      notifyListeners();
+    });
   }
 
-  static void remover(String id) {
-    clientes.removeWhere((c) => c.id == id);
+  Future<void> adicionar(String nome, String telefone) async {
+    await _service.adicionar(nome, telefone);
   }
 
-  static String gerarId() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = Random().nextInt(9999);
+  Future<void> atualizar(ClienteModel cliente) async {
+    await _service.atualizar(cliente);
+  }
 
-    return '$timestamp$random';
+  Future<void> remover(String id) async {
+    await _service.remover(id);
   }
 }
