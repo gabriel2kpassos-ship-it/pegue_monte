@@ -125,16 +125,15 @@ Estrutura preparada para futura inclusão de:
 ---
 
 ## 📸 Screenshots
-
-![tela_começo](imagem_tela_inicial.png)
-![tela_cliente](tela_cliente.png)
-![tela_de_cadastro_do_cliente](cadastro_cliente.png)
-![tela_produto](tela_produto.png)
-![tela_de_cadastro_dos_produtos](cadastro_produto.png)
-![tela_kits](tela_kits.png)
-![tela_de_cadastro_dos_kits](cadastro_kits.png)
-![tela_alugueis](tela_alugueis.png)
-![tela_de_cadastro_dos_alugueis](cadastro_alugueis.png)
+![cadastro_alugueis](assets/images/cadastro_alugueis.png)  
+![cadastro_cliente](assets/images/cadastro_cliente.png) 
+![cadastro_kits](assets/images/cadastro_kits.png) 
+![cadastro_produto](assets/images/cadastro_produto.png) 
+![imagem_tela_inicial](assets/images/imagem_tela_inicial.png) 
+![tela_alugueis](assets/images/tela_alugueis.png) 
+![tela_cliente](assets/images/tela_cliente.png) 
+![tela_kit](assets/images/tela_kits.png) 
+![tela_produto](assets/images/tela_produto.png)
 ---
 
 ## 👤 Autor
