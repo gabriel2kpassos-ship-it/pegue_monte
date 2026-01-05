@@ -1,96 +1,70 @@
 import 'package:flutter/material.dart';
-import '../../core/services/aluguel_service.dart';
+import 'package:provider/provider.dart';
+
+import 'alugueis_controller.dart';
+import 'aluguel_form_page.dart';
 import '../../models/aluguel_model.dart';
 
 class AlugueisPage extends StatelessWidget {
-  final _service = AluguelService();
-
-  AlugueisPage({super.key});
-
-  Future<bool> _confirmar(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Confirmar'),
-            content: const Text('Deseja realmente excluir este aluguel?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Excluir'),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-  }
+  const AlugueisPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Aluguéis')),
-      body: StreamBuilder<List<AluguelModel>>(
-        stream: _service.listar(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return ChangeNotifierProvider(
+      create: (_) => AlugueisController()..ouvirAlugueis(),
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Aluguéis')),
+        floatingActionButton: FloatingActionButton(
+          child: const Icon(Icons.add),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AluguelFormPage(),
+              ),
+            );
+          },
+        ),
+        body: Consumer<AlugueisController>(
+          builder: (_, controller, __) {
+            if (controller.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final lista = snapshot.data!;
+            if (controller.alugueis.isEmpty) {
+              return const Center(child: Text('Nenhum aluguel encontrado'));
+            }
 
-          if (lista.isEmpty) {
-            return const Center(child: Text('Nenhum aluguel cadastrado'));
-          }
+            return ListView.builder(
+              itemCount: controller.alugueis.length,
+              itemBuilder: (_, i) {
+                final aluguel = controller.alugueis[i];
 
-          return ListView.builder(
-            itemCount: lista.length,
-            itemBuilder: (context, index) {
-              final aluguel = lista[index];
-
-              return Card(
-                child: ListTile(
+                return ListTile(
                   title: Text(aluguel.clienteNome),
                   subtitle: Text(
-                    'Kit: ${aluguel.kit.nome}\nStatus: ${aluguel.status}',
+                    '${aluguel.kitNome}\n'
+                    '${_fmt(aluguel.dataInicio)} → ${_fmt(aluguel.dataFim)}',
                   ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (v) async {
-                      if (v == 'finalizar') {
-                        await _service.finalizarAluguel(
-                          aluguel.id,
-                          aluguel.kit,
-                        );
-                      } else if (v == 'excluir') {
-                        if (await _confirmar(context)) {
-                          await _service.excluir(aluguel.id);
-                        }
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                        value: 'finalizar',
-                        child: Text('Finalizar'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'excluir',
-                        child: Text('Excluir'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            Navigator.pushNamed(context, '/aluguel-form'),
-        child: const Icon(Icons.add),
+                  isThreeLine: true,
+                  trailing: aluguel.status == AluguelStatus.ativo
+                      ? IconButton(
+                          icon: const Icon(Icons.assignment_turned_in),
+                          onPressed: () =>
+                              controller.devolverAluguel(aluguel),
+                        )
+                      : const Icon(Icons.check, color: Colors.green),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
+
+  String _fmt(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/'
+      '${d.month.toString().padLeft(2, '0')}/'
+      '${d.year}';
 }

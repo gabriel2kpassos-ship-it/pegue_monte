@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ClienteModel {
   final String id;
   final String nome;
@@ -9,14 +11,20 @@ class ClienteModel {
     required this.telefone,
   });
 
-  factory ClienteModel.fromMap(String id, Map<String, dynamic> map) {
+  /// Converte Firestore → Dart
+  factory ClienteModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data()!;
+
     return ClienteModel(
-      id: id,
-      nome: map['nome'] ?? '',
-      telefone: map['telefone'] ?? '',
+      id: doc.id,
+      nome: data['nome'] ?? '',
+      telefone: data['telefone'] ?? '',
     );
   }
 
+  /// Converte Dart → Firestore
   Map<String, dynamic> toMap() {
     return {
       'nome': nome,

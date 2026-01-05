@@ -1,51 +1,79 @@
-import 'kit_model.dart';
+enum AluguelStatus {
+  ativo,
+  devolvido,
+}
 
 class AluguelModel {
   final String id;
+
   final String clienteId;
   final String clienteNome;
-  final KitModel kit;
-  final DateTime dataRetirada;
-  final DateTime dataDevolucao;
+
+  final String kitId;
+  final String kitNome;
+
+  final DateTime dataInicio;
+  final DateTime dataFim;
+
   final double valorTotal;
-  final String status;
+
+  final AluguelStatus status;
 
   AluguelModel({
     required this.id,
     required this.clienteId,
     required this.clienteNome,
-    required this.kit,
-    required this.dataRetirada,
-    required this.dataDevolucao,
+    required this.kitId,
+    required this.kitNome,
+    required this.dataInicio,
+    required this.dataFim,
     required this.valorTotal,
     required this.status,
   });
 
-  factory AluguelModel.fromMap(String id, Map<String, dynamic> map) {
+  /// 🔄 Firestore → Model (ROBUSTO)
+  factory AluguelModel.fromFirestore(
+    String id,
+    Map<String, dynamic> data,
+  ) {
+    final statusString = data['status'];
+
+    AluguelStatus statusFinal = AluguelStatus.ativo;
+
+    if (statusString is String) {
+      try {
+        statusFinal = AluguelStatus.values.firstWhere(
+          (e) => e.name == statusString,
+        );
+      } catch (_) {
+        statusFinal = AluguelStatus.ativo;
+      }
+    }
+
     return AluguelModel(
       id: id,
-      clienteId: map['clienteId'],
-      clienteNome: map['clienteNome'],
-      kit: KitModel.fromMap(
-        map['kit']['id'],
-        Map<String, dynamic>.from(map['kit']),
-      ),
-      dataRetirada: DateTime.parse(map['dataRetirada']),
-      dataDevolucao: DateTime.parse(map['dataDevolucao']),
-      valorTotal: (map['valorTotal'] ?? 0).toDouble(),
-      status: map['status'],
+      clienteId: data['clienteId'] ?? '',
+      clienteNome: data['clienteNome'] ?? '',
+      kitId: data['kitId'] ?? '',
+      kitNome: data['kitNome'] ?? '',
+      dataInicio: (data['dataInicio'] as dynamic).toDate(),
+      dataFim: (data['dataFim'] as dynamic).toDate(),
+      valorTotal: (data['valorTotal'] as num?)?.toDouble() ?? 0.0,
+      status: statusFinal,
     );
   }
 
-  Map<String, dynamic> toMap() {
+  /// 🔄 Model → Firestore
+  Map<String, dynamic> toFirestore() {
     return {
       'clienteId': clienteId,
       'clienteNome': clienteNome,
-      'kit': kit.toMap()..['id'] = kit.id,
-      'dataRetirada': dataRetirada.toIso8601String(),
-      'dataDevolucao': dataDevolucao.toIso8601String(),
+      'kitId': kitId,
+      'kitNome': kitNome,
+      'dataInicio': dataInicio,
+      'dataFim': dataFim,
       'valorTotal': valorTotal,
-      'status': status,
+      'status': status.name, // 🔥 GARANTIDO
     };
   }
 }

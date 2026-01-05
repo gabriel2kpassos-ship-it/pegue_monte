@@ -1,26 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/cliente_model.dart';
 
 class ClienteService {
-  final _db = FirebaseFirestore.instance.collection('clientes');
+  final CollectionReference<Map<String, dynamic>> _collection =
+      FirebaseFirestore.instance.collection('clientes');
 
-  Stream<List<ClienteModel>> listar() {
-    return _db.snapshots().map(
-          (s) => s.docs
-              .map((d) => ClienteModel.fromMap(d.id, d.data()))
+  /// Criar cliente
+  Future<void> criarCliente(ClienteModel cliente) async {
+    await _collection.add(cliente.toMap());
+  }
+
+  /// Atualizar cliente
+  Future<void> atualizarCliente(ClienteModel cliente) async {
+    await _collection.doc(cliente.id).update(cliente.toMap());
+  }
+
+  /// Excluir cliente
+  Future<void> excluirCliente(String clienteId) async {
+    await _collection.doc(clienteId).delete();
+  }
+
+  /// Listar clientes (stream)
+  Stream<List<ClienteModel>> listarClientes() {
+    return _collection.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ClienteModel.fromFirestore(doc))
               .toList(),
         );
-  }
-
-  Future<void> criar(ClienteModel cliente) async {
-    await _db.add(cliente.toMap());
-  }
-
-  Future<void> atualizar(ClienteModel cliente) async {
-    await _db.doc(cliente.id).update(cliente.toMap());
-  }
-
-  Future<void> remover(String id) async {
-    await _db.doc(id).delete();
   }
 }

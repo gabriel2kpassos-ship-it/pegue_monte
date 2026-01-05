@@ -1,96 +1,128 @@
 import 'package:flutter/material.dart';
+
 import '../../core/services/produto_service.dart';
 import '../../models/produto_model.dart';
 
 class ProdutoFormPage extends StatefulWidget {
-  const ProdutoFormPage({super.key});
+  final ProdutoModel? produto;
+
+  const ProdutoFormPage({super.key, this.produto});
 
   @override
   State<ProdutoFormPage> createState() => _ProdutoFormPageState();
 }
 
 class _ProdutoFormPageState extends State<ProdutoFormPage> {
-  final _nomeController = TextEditingController();
-  final _quantidadeController = TextEditingController();
-
+  final _formKey = GlobalKey<FormState>();
   final _service = ProdutoService();
 
-  ProdutoModel? _produto;
+  late final TextEditingController _nomeController;
+  late final TextEditingController _quantidadeController;
+
+  bool _salvando = false;
+
+  bool get _editando => widget.produto != null;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
 
-    final args = ModalRoute.of(context)!.settings.arguments;
+    _nomeController =
+        TextEditingController(text: widget.produto?.nome ?? '');
+    _quantidadeController = TextEditingController(
+      text: widget.produto?.quantidade.toString() ?? '0',
+    );
+  }
 
-    if (args != null && args is ProdutoModel) {
-      _produto = args;
-      _nomeController.text = _produto!.nome;
-      _quantidadeController.text = _produto!.quantidade.toString();
-    }
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _quantidadeController.dispose();
+    super.dispose();
   }
 
   Future<void> _salvar() async {
-    if (_nomeController.text.isEmpty ||
-        _quantidadeController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos')),
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _salvando = true);
+
+    try {
+      final produto = ProdutoModel(
+        id: widget.produto?.id ?? '',
+        nome: _nomeController.text.trim(),
+        quantidade: int.parse(_quantidadeController.text),
       );
-      return;
+
+      if (_editando) {
+        await _service.atualizarProduto(produto);
+      } else {
+        await _service.criarProduto(produto);
+      }
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
     }
-
-    final quantidade = int.tryParse(_quantidadeController.text) ?? 0;
-
-    final produto = ProdutoModel(
-      id: _produto?.id ?? '',
-      nome: _nomeController.text,
-      quantidade: quantidade,
-    );
-
-    if (_produto == null) {
-      await _service.criar(produto);
-    } else {
-      await _service.atualizar(produto);
-    }
-
-    if (!mounted) return;
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEdicao = _produto != null;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdicao ? 'Editar Produto' : 'Novo Produto'),
+        title: Text(_editando ? 'Editar Produto' : 'Novo Produto'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nomeController,
-              decoration:
-                  const InputDecoration(labelText: 'Nome do produto'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _quantidadeController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Quantidade em quantidade',
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nomeController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome do produto',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Informe o nome';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _salvar,
-                child: const Text('Salvar'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _quantidadeController,
+                decoration: const InputDecoration(
+                  labelText: 'Quantidade em estoque',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Informe a quantidade';
+                  }
+                  final qtd = int.tryParse(value);
+                  if (qtd == null || qtd < 0) {
+                    return 'Quantidade inválida';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _salvando ? null : _salvar,
+                  child: _salvando
+                      ? const CircularProgressIndicator()
+                      : const Text('Salvar'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

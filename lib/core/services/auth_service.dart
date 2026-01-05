@@ -3,38 +3,49 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// Mapeamento de usuário -> email
-  final Map<String, String> _usuarios = {
+  /// Stream de autenticação
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  /// Usuário atual
+  User? get currentUser => _auth.currentUser;
+
+  /// Usuários permitidos no sistema
+  static const Map<String, String> _allowedUsers = {
     'miriandaniela13': 'mirian@peguemonte.com',
     'geisimara': 'geisimara@peguemonte.com',
   };
 
-  Future<User?> loginComUsuario({
-    required String usuario,
-    required String senha,
+  /// Login com NOME DE USUÁRIO + SENHA
+  Future<void> login({
+    required String username,
+    required String password,
   }) async {
-    final usuarioNormalizado = usuario.trim().toLowerCase();
+    final normalizedUsername = username.trim().toLowerCase();
 
-    if (!_usuarios.containsKey(usuarioNormalizado)) {
+    if (password.trim().isEmpty) {
       throw FirebaseAuthException(
-        code: 'usuario-invalido',
-        message: 'Usuário não encontrado',
+        code: 'empty-password',
+        message: 'Senha obrigatória',
       );
     }
 
-    final email = _usuarios[usuarioNormalizado]!;
+    if (!_allowedUsers.containsKey(normalizedUsername)) {
+      throw FirebaseAuthException(
+        code: 'invalid-username',
+        message: 'Usuário não autorizado',
+      );
+    }
 
-    final credencial = await _auth.signInWithEmailAndPassword(
+    final email = _allowedUsers[normalizedUsername]!;
+
+    await _auth.signInWithEmailAndPassword(
       email: email,
-      password: senha,
+      password: password,
     );
-
-    return credencial.user;
   }
 
+  /// Logout
   Future<void> logout() async {
     await _auth.signOut();
   }
-
-  User? get usuarioAtual => _auth.currentUser;
 }

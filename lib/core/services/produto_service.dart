@@ -1,38 +1,53 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/produto_model.dart';
 
 class ProdutoService {
-  final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// LISTAR PRODUTOS (COM quantidadeSEGURO)
-  Stream<List<ProdutoModel>> listar() {
-    return _db.collection('produtos').snapshots().map(
-          (snapshot) => snapshot.docs.map((doc) {
-            final data = doc.data();
+  CollectionReference get _produtos =>
+      _firestore.collection('produtos');
 
-            // 🔒 GARANTIR ESTOQUE
-            data['estoque'] = data['estoque'] ?? 0;
-
-            return ProdutoModel.fromMap(doc.id, data);
-          }).toList(),
+  /// LISTAR PRODUTOS
+  Stream<List<ProdutoModel>> listarProdutos() {
+    return _produtos.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => ProdutoModel.fromFirestore(
+                  doc.id,
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
         );
   }
 
+  /// BUSCAR PRODUTO POR ID (🔥 NECESSÁRIO PARA ALUGUEL)
+  Future<ProdutoModel> buscarProdutoPorId(String id) async {
+    final doc = await _produtos.doc(id).get();
+
+    if (!doc.exists) {
+      throw Exception('Produto não encontrado');
+    }
+
+    return ProdutoModel.fromFirestore(
+      doc.id,
+      doc.data() as Map<String, dynamic>,
+    );
+  }
+
   /// CRIAR PRODUTO
-  Future<void> criar(ProdutoModel produto) async {
-    await _db.collection('produtos').add(produto.toMap());
+  Future<void> criarProduto(ProdutoModel produto) async {
+    await _produtos.add(produto.toFirestore());
   }
 
   /// ATUALIZAR PRODUTO
-  Future<void> atualizar(ProdutoModel produto) async {
-    await _db
-        .collection('produtos')
-        .doc(produto.id)
-        .update(produto.toMap());
+  Future<void> atualizarProduto(ProdutoModel produto) async {
+    await _produtos.doc(produto.id).update(produto.toFirestore());
   }
 
-  /// REMOVER PRODUTO
-  Future<void> remover(String id) async {
-    await _db.collection('produtos').doc(id).delete();
+  /// EXCLUIR PRODUTO
+  Future<void> excluirProduto(String id) async {
+    await _produtos.doc(id).delete();
   }
 }

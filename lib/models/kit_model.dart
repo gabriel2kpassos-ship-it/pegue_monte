@@ -13,22 +13,25 @@ class KitModel {
     required this.itens,
   });
 
-  factory KitModel.fromMap(String id, Map<String, dynamic> map) {
+  /// 🔄 Firestore → Model
+  factory KitModel.fromFirestore(
+    String id,
+    Map<String, dynamic> data,
+  ) {
     return KitModel(
       id: id,
-      nome: map['nome'] ?? '',
-      preco: (map['preco'] ?? 0).toDouble(),
-      itens: (map['itens'] as List<dynamic>? ?? [])
-          .map(
-            (e) => KitItemModel.fromMap(
-              Map<String, dynamic>.from(e),
-            ),
-          )
+      nome: data['nome'] ?? '',
+      preco: (data['preco'] ?? 0).toDouble(),
+      itens: (data['itens'] as List<dynamic>? ?? [])
+          .map((e) => KitItemModel.fromMap(
+                Map<String, dynamic>.from(e),
+              ))
           .toList(),
     );
   }
 
-  Map<String, dynamic> toMap() {
+  /// 🔄 Model → Firestore
+  Map<String, dynamic> toFirestore() {
     return {
       'nome': nome,
       'preco': preco,

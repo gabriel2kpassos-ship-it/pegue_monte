@@ -1,107 +1,125 @@
 import 'package:flutter/material.dart';
 
 import '../../core/services/cliente_service.dart';
-import '../../core/utils/phone_input_formatter.dart';
-import '../../core/utils/phone_display_formatter.dart';
 import '../../models/cliente_model.dart';
+import '../../core/utils/phone_input_formatter.dart';
 
 class ClienteFormPage extends StatefulWidget {
-  const ClienteFormPage({super.key});
+  final ClienteModel? cliente;
+
+  const ClienteFormPage({super.key, this.cliente});
 
   @override
   State<ClienteFormPage> createState() => _ClienteFormPageState();
 }
 
 class _ClienteFormPageState extends State<ClienteFormPage> {
-  final _nomeController = TextEditingController();
-  final _telefoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   final _service = ClienteService();
 
-  ClienteModel? _cliente;
+  late final TextEditingController _nomeController;
+  late final TextEditingController _telefoneController;
+
+  bool _salvando = false;
+
+  bool get _editando => widget.cliente != null;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
 
-    final args = ModalRoute.of(context)!.settings.arguments;
-
-    if (args != null && args is ClienteModel) {
-      _cliente = args;
-      _nomeController.text = _cliente!.nome;
-      _telefoneController.text =
-          PhoneDisplayFormatter.format(_cliente!.telefone);
-    }
+    _nomeController =
+        TextEditingController(text: widget.cliente?.nome ?? '');
+    _telefoneController =
+        TextEditingController(text: widget.cliente?.telefone ?? '');
   }
 
-  String _somenteNumeros(String value) {
-    return value.replaceAll(RegExp(r'\D'), '');
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    _telefoneController.dispose();
+    super.dispose();
   }
 
   Future<void> _salvar() async {
-    final nome = _nomeController.text.trim();
-    final telefone = _somenteNumeros(_telefoneController.text);
+    if (!_formKey.currentState!.validate()) return;
 
-    if (nome.isEmpty || telefone.isEmpty) return;
+    setState(() => _salvando = true);
 
-    if (_cliente == null) {
-      await _service.criar(
-        ClienteModel(
-          id: '',
-          nome: nome,
-          telefone: telefone,
-        ),
+    try {
+      final cliente = ClienteModel(
+        id: widget.cliente?.id ?? '',
+        nome: _nomeController.text.trim(),
+        telefone: _telefoneController.text.trim(),
       );
-    } else {
-      await _service.atualizar(
-        ClienteModel(
-          id: _cliente!.id,
-          nome: nome,
-          telefone: telefone,
-        ),
+
+      if (_editando) {
+        await _service.atualizarCliente(cliente);
+      } else {
+        await _service.criarCliente(cliente);
+      }
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao salvar: $e')),
       );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
     }
-
-    if (!mounted) return;
-    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEdicao = _cliente != null;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdicao ? 'Editar Cliente' : 'Novo Cliente'),
+        title: Text(_editando ? 'Editar Cliente' : 'Novo Cliente'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nomeController,
-              decoration: const InputDecoration(labelText: 'Nome'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _telefoneController,
-              keyboardType: TextInputType.phone,
-              inputFormatters: [
-                PhoneInputFormatter(),
-              ],
-              decoration: const InputDecoration(
-                labelText: 'Telefone',
-                hintText: '(11) 91234-5678',
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _nomeController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Informe o nome';
+                  }
+                  return null;
+                },
               ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _salvar,
-                child: const Text('Salvar'),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _telefoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Telefone',
+                ),
+                keyboardType: TextInputType.phone,
+                inputFormatters: [PhoneInputFormatter()],
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Informe o telefone';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _salvando ? null : _salvar,
+                  child: _salvando
+                      ? const CircularProgressIndicator()
+                      : const Text('Salvar'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

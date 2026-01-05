@@ -1,117 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/utils/phone_display_formatter.dart';
-import '../../models/cliente_model.dart';
 import 'clientes_controller.dart';
+import '../../models/cliente_model.dart';
+import 'cliente_form_page.dart';
 
 class ClientesPage extends StatelessWidget {
-  final bool selecionar;
-  final _controller = ClientesController();
+  const ClientesPage({super.key});
 
-  ClientesPage({
-    super.key,
-    this.selecionar = false,
-  });
-
-  Future<void> _abrirWhatsApp(String telefone) async {
-    final numero = telefone.replaceAll(RegExp(r'\D'), '');
-    final url = Uri.parse('https://wa.me/55$numero');
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(
-        url,
-        mode: LaunchMode.externalApplication,
-      );
+  void _abrirWhatsApp(String telefone) async {
+    final uri = Uri.parse(
+      'https://wa.me/55${telefone.replaceAll(RegExp(r"\\D"), "")}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(selecionar ? 'Selecionar Cliente' : 'Clientes'),
-      ),
-      floatingActionButton: selecionar
-          ? null
-          : FloatingActionButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/cliente-form');
-              },
-              child: const Icon(Icons.add),
-            ),
-      body: StreamBuilder<List<ClienteModel>>(
-        stream: _controller.listar(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final clientes = snapshot.data!;
-
-          if (clientes.isEmpty) {
-            return const Center(
-              child: Text('Nenhum cliente cadastrado'),
+    return ChangeNotifierProvider(
+      create: (_) => ClientesController()..ouvirClientes(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Clientes'),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const ClienteFormPage(),
+              ),
             );
-          }
+          },
+          child: const Icon(Icons.add),
+        ),
+        body: Consumer<ClientesController>(
+          builder: (context, controller, _) {
+            if (controller.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: clientes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final cliente = clientes[index];
-
-              return ListTile(
-                title: Text(cliente.nome),
-                subtitle: Text(
-                  PhoneDisplayFormatter.format(cliente.telefone),
-                ),
-
-                /// 👉 SELEÇÃO DE CLIENTE PARA ALUGUEL
-                onTap: selecionar
-                    ? () => Navigator.pop(context, cliente)
-                    : null,
-
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    /// WhatsApp (mantido)
-                    IconButton(
-                      tooltip: 'WhatsApp',
-                      icon: const Icon(
-                        Icons.chat,
-                        color: Colors.green,
-                      ),
-                      onPressed: () =>
-                          _abrirWhatsApp(cliente.telefone),
-                    ),
-
-                    /// Editar / Excluir SOMENTE no modo normal
-                    if (!selecionar) ...[
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          Navigator.pushNamed(
-                            context,
-                            '/cliente-form',
-                            arguments: cliente,
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () async {
-                          await _controller.remover(cliente.id);
-                        },
-                      ),
-                    ],
-                  ],
-                ),
+            if (controller.clientes.isEmpty) {
+              return const Center(
+                child: Text('Nenhum cliente cadastrado'),
               );
-            },
-          );
-        },
+            }
+
+            return ListView.builder(
+              itemCount: controller.clientes.length,
+              itemBuilder: (context, index) {
+                final ClienteModel cliente = controller.clientes[index];
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    title: Text(cliente.nome),
+                    subtitle: Text(cliente.telefone),
+                    leading: IconButton(
+                      icon: const Icon(Icons.chat, color: Colors.green),
+                      onPressed: () => _abrirWhatsApp(cliente.telefone),
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'editar') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ClienteFormPage(cliente: cliente),
+                            ),
+                          );
+                        } else if (value == 'excluir') {
+                          controller.excluirCliente(cliente.id);
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'editar',
+                          child: Text('Editar'),
+                        ),
+                        PopupMenuItem(
+                          value: 'excluir',
+                          child: Text('Excluir'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,26 +1,52 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/kit_model.dart';
 
 class KitService {
-  final _db = FirebaseFirestore.instance.collection('kits');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Stream<List<KitModel>> listar() {
-    return _db.snapshots().map(
-          (s) => s.docs
-              .map((d) => KitModel.fromMap(d.id, d.data()))
+  CollectionReference get _kits => _firestore.collection('kits');
+
+  /// OUVIR KITS
+  Stream<List<KitModel>> listarKits() {
+    return _kits.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => KitModel.fromFirestore(
+                  doc.id,
+                  doc.data() as Map<String, dynamic>,
+                ),
+              )
               .toList(),
         );
   }
 
-  Future<void> criar(KitModel kit) async {
-    await _db.add(kit.toMap());
+  /// 🔎 BUSCAR KIT POR ID (🔥 NECESSÁRIO PARA ALUGUEL)
+  Future<KitModel> buscarKitPorId(String id) async {
+    final doc = await _kits.doc(id).get();
+
+    if (!doc.exists) {
+      throw Exception('Kit não encontrado');
+    }
+
+    return KitModel.fromFirestore(
+      doc.id,
+      doc.data() as Map<String, dynamic>,
+    );
   }
 
-  Future<void> atualizar(KitModel kit) async {
-    await _db.doc(kit.id).update(kit.toMap());
+  /// CRIAR KIT
+  Future<void> criarKit(KitModel kit) async {
+    await _kits.add(kit.toFirestore());
   }
 
-  Future<void> remover(String id) async {
-    await _db.doc(id).delete();
+  /// ATUALIZAR KIT
+  Future<void> atualizarKit(KitModel kit) async {
+    await _kits.doc(kit.id).update(kit.toFirestore());
+  }
+
+  /// EXCLUIR KIT
+  Future<void> excluirKit(String id) async {
+    await _kits.doc(id).delete();
   }
 }
