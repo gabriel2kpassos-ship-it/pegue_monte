@@ -1,38 +1,26 @@
 class KitItemModel {
   final String produtoId;
-  final String produtoNome;
+  final String nome;
   final int quantidade;
 
   KitItemModel({
     required this.produtoId,
-    required this.produtoNome,
+    required this.nome,
     required this.quantidade,
   });
 
-  KitItemModel copyWith({
-    String? produtoId,
-    String? produtoNome,
-    int? quantidade,
-  }) {
-    return KitItemModel(
-      produtoId: produtoId ?? this.produtoId,
-      produtoNome: produtoNome ?? this.produtoNome,
-      quantidade: quantidade ?? this.quantidade,
-    );
-  }
-
   factory KitItemModel.fromMap(Map<String, dynamic> map) {
     return KitItemModel(
-      produtoId: map['produtoId'] as String,
-      produtoNome: map['produtoNome'] as String,
-      quantidade: map['quantidade'] as int,
+      produtoId: map['produtoId'] ?? '',
+      nome: map['nome'] ?? '',
+      quantidade: map['quantidade'] ?? 0,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
       'produtoId': produtoId,
-      'produtoNome': produtoNome,
+      'nome': nome,
       'quantidade': quantidade,
     };
   }

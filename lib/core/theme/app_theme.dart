@@ -1,44 +1,61 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static ThemeData get theme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.indigo,
+      seedColor: Colors.deepPurple,
       brightness: Brightness.light,
     );
 
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: Colors.grey.shade100,
+
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
-        centerTitle: true,
+        backgroundColor: colorScheme.primary,
+        foregroundColor: Colors.white,
         elevation: 0,
+        centerTitle: true,
       ),
+
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
+        foregroundColor: Colors.white,
       ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(48),
+          backgroundColor: colorScheme.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
+
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
+
+      /// ✅ AQUI ESTÁ A CORREÇÃO
+      cardTheme: CardThemeData(
+        elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
+      ),
+
+      listTileTheme: ListTileThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        tileColor: Colors.white,
       ),
     );
   }

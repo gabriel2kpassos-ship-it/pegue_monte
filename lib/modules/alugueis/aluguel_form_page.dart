@@ -2,191 +2,156 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/services/aluguel_service.dart';
-import '../../core/services/cliente_service.dart';
-import '../../core/services/kit_service.dart';
-import '../../core/services/produto_service.dart';
 import '../../models/aluguel_model.dart';
-import '../../models/cliente_model.dart';
 import '../../models/kit_model.dart';
-import '../../models/kit_item_model.dart';
+import '../../models/cliente_model.dart';
 
 class AluguelFormPage extends StatefulWidget {
-  const AluguelFormPage({super.key});
-
   @override
   State<AluguelFormPage> createState() => _AluguelFormPageState();
 }
 
 class _AluguelFormPageState extends State<AluguelFormPage> {
-  final _clienteService = ClienteService();
-  final _kitService = KitService();
-  final _produtoService = ProdutoService();
-  final _aluguelService = AluguelService();
+  final _service = AluguelService();
 
-  final _dateFormat = DateFormat('dd/MM/yyyy', 'pt_BR');
+  ClienteModel? _cliente;
+  KitModel? _kit;
 
-  ClienteModel? _clienteSelecionado;
-  KitModel? _kitSelecionado;
-
-  DateTime? _dataInicio;
+  DateTime? _dataRetirada;
   DateTime? _dataDevolucao;
 
-  bool _salvando = false;
-
-  Future<void> _selecionarDataInicio() async {
+  Future<void> _selecionarData(bool retirada) async {
     final data = await showDatePicker(
       context: context,
       locale: const Locale('pt', 'BR'),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
     );
 
     if (data != null) {
       setState(() {
-        _dataInicio = data;
-        _dataDevolucao = null; // 🔑 reseta devolução
+        retirada ? _dataRetirada = data : _dataDevolucao = data;
       });
     }
   }
 
-  Future<void> _selecionarDataDevolucao() async {
-    if (_dataInicio == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione primeiro a data de início'),
-        ),
-      );
-      return;
-    }
-
-    final data = await showDatePicker(
-      context: context,
-      locale: const Locale('pt', 'BR'),
-      firstDate: _dataInicio!.add(const Duration(days: 1)),
-      lastDate: _dataInicio!.add(const Duration(days: 365)),
-      initialDate: _dataInicio!.add(const Duration(days: 1)),
-    );
-
-    if (data != null) {
-      setState(() => _dataDevolucao = data);
-    }
-  }
-
-  bool _estoqueSuficiente(KitModel kit) {
-    for (final KitItemModel item in kit.itens) {
-      if (!_produtoService.temEstoque(
-        item.produtoId,
-        item.quantidade,
-      )) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void _confirmar() async {
-    if (_clienteSelecionado == null ||
-        _kitSelecionado == null ||
-        _dataInicio == null ||
-        _dataDevolucao == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preencha todos os campos')),
-      );
-      return;
-    }
-
-    if (!_estoqueSuficiente(_kitSelecionado!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Estoque insuficiente para um ou mais itens do kit'),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _salvando = true);
-
-    final aluguel = AluguelModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      clienteId: _clienteSelecionado!.id,
-      clienteNome: _clienteSelecionado!.nome,
-      kitId: _kitSelecionado!.id,
-      kitNome: _kitSelecionado!.nome,
-      kitPreco: _kitSelecionado!.preco,
-      itens: List.from(_kitSelecionado!.itens),
-      dataInicio: _dataInicio!,
-      dataDevolucao: _dataDevolucao!,
-      status: AluguelStatus.ativo,
-    );
-
-    _aluguelService.adicionar(aluguel);
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (mounted) Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final clientes = _clienteService.listar();
-    final kits = _kitService.listar();
+    final formatador = DateFormat('dd/MM/yyyy');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo Aluguel')),
+      appBar: AppBar(
+        title: const Text('Novo Aluguel'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            DropdownButtonFormField<ClienteModel>(
-              initialValue: _clienteSelecionado,
-              decoration: const InputDecoration(labelText: 'Cliente'),
-              items: clientes
-                  .map((c) => DropdownMenuItem(
-                        value: c,
-                        child: Text(c.nome),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _clienteSelecionado = v),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<KitModel>(
-              initialValue: _kitSelecionado,
-              decoration: const InputDecoration(labelText: 'Kit'),
-              items: kits
-                  .map((k) => DropdownMenuItem(
-                        value: k,
-                        child: Text(k.nome),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _kitSelecionado = v),
-            ),
-            const SizedBox(height: 16),
+            /// CLIENTE
             ListTile(
               title: Text(
-                _dataInicio == null
-                    ? 'Selecionar data de início'
-                    : 'Início: ${_dateFormat.format(_dataInicio!)}',
+                _cliente == null
+                    ? 'Selecionar Cliente'
+                    : _cliente!.nome,
               ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _selecionarDataInicio,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  '/clientes-select',
+                );
+
+                if (result is ClienteModel) {
+                  setState(() => _cliente = result);
+                }
+              },
+            ),
+
+            /// KIT
+            ListTile(
+              title:
+                  Text(_kit == null ? 'Selecionar Kit' : _kit!.nome),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final result = await Navigator.pushNamed(
+                  context,
+                  '/kits-select',
+                );
+
+                if (result is KitModel) {
+                  setState(() => _kit = result);
+                }
+              },
+            ),
+
+            const Divider(),
+
+            /// DATAS
+            ListTile(
+              title: Text(
+                _dataRetirada == null
+                    ? 'Data de Retirada'
+                    : formatador.format(_dataRetirada!),
+              ),
+              trailing: const Icon(Icons.date_range),
+              onTap: () => _selecionarData(true),
             ),
             ListTile(
               title: Text(
                 _dataDevolucao == null
-                    ? 'Selecionar data de devolução'
-                    : 'Devolução: ${_dateFormat.format(_dataDevolucao!)}',
+                    ? 'Data de Devolução'
+                    : formatador.format(_dataDevolucao!),
               ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _selecionarDataDevolucao,
+              trailing: const Icon(Icons.date_range),
+              onTap: () => _selecionarData(false),
             ),
+
             const SizedBox(height: 24),
+
+            /// SALVAR
             ElevatedButton(
-              onPressed: _salvando ? null : _confirmar,
-              child: _salvando
-                  ? const CircularProgressIndicator()
-                  : const Text('Confirmar Aluguel'),
+              onPressed: () async {
+                if (_cliente == null ||
+                    _kit == null ||
+                    _dataRetirada == null ||
+                    _dataDevolucao == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Preencha todos os campos'),
+                    ),
+                  );
+                  return;
+                }
+
+                final aluguel = AluguelModel(
+                  id: '',
+                  clienteId: _cliente!.id,
+                  clienteNome: _cliente!.nome,
+                  kit: _kit!,
+                  dataRetirada: _dataRetirada!,
+                  dataDevolucao: _dataDevolucao!,
+                  valorTotal: _kit!.preco,
+                  status: 'ativo',
+                );
+
+                try {
+                  await _service.criar(aluguel);
+
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        e.toString().replaceAll('Exception: ', ''),
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Salvar Aluguel'),
             ),
           ],
         ),

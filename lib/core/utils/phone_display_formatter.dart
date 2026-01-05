@@ -1,6 +1,4 @@
 class PhoneDisplayFormatter {
-  /// Formata um telefone salvo apenas com números para exibição.
-  /// Ex: 11999998888 → (11) 99999-8888
   static String format(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
 

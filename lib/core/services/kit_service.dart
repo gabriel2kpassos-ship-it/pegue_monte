@@ -1,36 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/kit_model.dart';
 
 class KitService {
-  KitService._internal();
-  static final KitService _instance = KitService._internal();
-  factory KitService() => _instance;
+  final _db = FirebaseFirestore.instance.collection('kits');
 
-  final List<KitModel> _kits = [];
-
-  List<KitModel> listar() {
-    return List.unmodifiable(_kits);
+  Stream<List<KitModel>> listar() {
+    return _db.snapshots().map(
+          (s) => s.docs
+              .map((d) => KitModel.fromMap(d.id, d.data()))
+              .toList(),
+        );
   }
 
-  void adicionar(KitModel kit) {
-    _kits.add(kit);
+  Future<void> criar(KitModel kit) async {
+    await _db.add(kit.toMap());
   }
 
-  void atualizar(KitModel kit) {
-    final index = _kits.indexWhere((k) => k.id == kit.id);
-    if (index >= 0) {
-      _kits[index] = kit;
-    }
+  Future<void> atualizar(KitModel kit) async {
+    await _db.doc(kit.id).update(kit.toMap());
   }
 
-  void remover(String id) {
-    _kits.removeWhere((k) => k.id == id);
-  }
-
-  KitModel? obterPorId(String id) {
-    try {
-      return _kits.firstWhere((k) => k.id == id);
-    } catch (_) {
-      return null;
-    }
+  Future<void> remover(String id) async {
+    await _db.doc(id).delete();
   }
 }

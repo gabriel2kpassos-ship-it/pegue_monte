@@ -1,45 +1,79 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:firebase_core/firebase_core.dart'; // Adicionado
-import 'firebase_options.dart'; // Adicionado
+
+import 'firebase_options.dart';
+
+// Módulos
+import 'modules/login/login_page.dart';
+import 'modules/dashboard/dashboard_page.dart';
+
+import 'modules/clientes/clientes_page.dart';
+import 'modules/clientes/cliente_form_page.dart';
+
+import 'modules/produtos/produtos_page.dart';
+import 'modules/produtos/produto_form_page.dart';
+
+import 'modules/kits/kits_page.dart';
+import 'modules/kits/kit_form_page.dart';
+
+import 'modules/alugueis/alugueis_page.dart';
+import 'modules/alugueis/aluguel_form_page.dart';
 
 import 'core/theme/app_theme.dart';
-import 'modules/login/login_page.dart'; // Vamos criar este arquivo
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Inicializa o Firebase antes de rodar o app
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
-  runApp(const KitRentalApp());
+  runApp(const PegueEMonteApp());
 }
 
-class KitRentalApp extends StatelessWidget {
-  const KitRentalApp({super.key});
+class PegueEMonteApp extends StatelessWidget {
+  const PegueEMonteApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gestão de Kits para Aluguel',
+      title: 'Pegue e Monte',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.theme,
 
-      locale: const Locale('pt', 'BR'),
+      // 🔥 NECESSÁRIO PARA DATE PICKER PT-BR
       supportedLocales: const [
         Locale('pt', 'BR'),
       ],
-
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
 
-      // Agora o app começa pela tela de Login
-      home: const LoginPage(), 
+      initialRoute: '/login',
+      routes: {
+        // AUTH
+        '/login': (_) => LoginPage(),
+        '/dashboard': (_) => DashboardPage(),
+
+        // CLIENTES
+        '/clientes': (_) => ClientesPage(selecionar: false),
+        '/clientes-select': (_) => ClientesPage(selecionar: true),
+        '/cliente-form': (_) => ClienteFormPage(),
+
+        // PRODUTOS
+        '/produtos': (_) => ProdutosPage(),
+        '/produto-form': (_) => ProdutoFormPage(),
+
+        // KITS
+        '/kits': (_) => KitsPage(selecionar: false),
+        '/kits-select': (_) => KitsPage(selecionar: true),
+        '/kit-form': (_) => KitFormPage(),
+
+        // ALUGUÉIS
+        '/alugueis': (_) => AlugueisPage(),
+        '/aluguel-form': (_) => AluguelFormPage(),
+      },
     );
   }
 }

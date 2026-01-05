@@ -1,81 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
 import '../../models/kit_model.dart';
 import 'kits_controller.dart';
-import 'kit_form_page.dart';
 
-class KitsPage extends StatefulWidget {
-  const KitsPage({super.key});
+class KitsPage extends StatelessWidget {
+  final bool selecionar;
+  final _controller = KitsController();
 
-  @override
-  State<KitsPage> createState() => _KitsPageState();
-}
-
-class _KitsPageState extends State<KitsPage> {
-  final controller = KitsController();
-
-  final _currencyFormat = NumberFormat.currency(
-    locale: 'pt_BR',
-    symbol: 'R\$',
-  );
-
-  void _abrirFormulario([KitModel? kit]) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => KitFormPage(kit: kit),
-      ),
-    );
-    setState(() {});
-  }
-
-  void _remover(String id) {
-    controller.remover(id);
-    setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Kit removido')),
-    );
-  }
+  KitsPage({
+    super.key,
+    this.selecionar = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final kits = controller.listar();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Kits')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _abrirFormulario(),
-        child: const Icon(Icons.add),
+      appBar: AppBar(
+        title: Text(selecionar ? 'Selecionar Kit' : 'Kits'),
       ),
-      body: kits.isEmpty
-          ? const Center(child: Text('Nenhum kit cadastrado'))
-          : ListView.builder(
-              itemCount: kits.length,
-              itemBuilder: (_, index) {
-                final kit = kits[index];
-                return ListTile(
-                  title: Text(kit.nome),
-                  subtitle: Text(
-                    'Preço: ${_currencyFormat.format(kit.preco)} • '
-                    'Itens: ${kit.itens.length}',
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _abrirFormulario(kit),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _remover(kit.id),
-                      ),
-                    ],
-                  ),
-                );
+      floatingActionButton: selecionar
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/kit-form');
               },
+              child: const Icon(Icons.add),
             ),
+      body: StreamBuilder<List<KitModel>>(
+        stream: _controller.listar(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final kits = snapshot.data!;
+
+          if (kits.isEmpty) {
+            return const Center(child: Text('Nenhum kit cadastrado'));
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: kits.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final kit = kits[index];
+
+              return ListTile(
+                title: Text(kit.nome),
+                subtitle: Text('${kit.itens.length} itens'),
+
+                /// 👉 SELEÇÃO DE KIT PARA ALUGUEL
+                onTap: selecionar
+                    ? () => Navigator.pop(context, kit)
+                    : null,
+
+                trailing: selecionar
+                    ? null
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              Navigator.pushNamed(
+                                context,
+                                '/kit-form',
+                                arguments: kit,
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () async {
+                              await _controller.remover(kit.id);
+                            },
+                          ),
+                        ],
+                      ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

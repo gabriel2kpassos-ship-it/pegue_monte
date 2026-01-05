@@ -1,100 +1,107 @@
 import 'package:flutter/material.dart';
-import 'clientes_controller.dart';
-import '../../models/cliente_model.dart';
+
+import '../../core/services/cliente_service.dart';
 import '../../core/utils/phone_input_formatter.dart';
+import '../../core/utils/phone_display_formatter.dart';
+import '../../models/cliente_model.dart';
 
 class ClienteFormPage extends StatefulWidget {
-  final ClienteModel? cliente;
-
-  const ClienteFormPage({super.key, this.cliente});
+  const ClienteFormPage({super.key});
 
   @override
   State<ClienteFormPage> createState() => _ClienteFormPageState();
 }
 
 class _ClienteFormPageState extends State<ClienteFormPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _controller = ClientesController();
+  final _nomeController = TextEditingController();
+  final _telefoneController = TextEditingController();
+  final _service = ClienteService();
 
-  late final TextEditingController _nomeController;
-  late final TextEditingController _telefoneController;
-
-  bool _salvando = false;
+  ClienteModel? _cliente;
 
   @override
-  void initState() {
-    super.initState();
-    _nomeController = TextEditingController(text: widget.cliente?.nome ?? '');
-    _telefoneController =
-        TextEditingController(text: widget.cliente?.telefone ?? '');
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final args = ModalRoute.of(context)!.settings.arguments;
+
+    if (args != null && args is ClienteModel) {
+      _cliente = args;
+      _nomeController.text = _cliente!.nome;
+      _telefoneController.text =
+          PhoneDisplayFormatter.format(_cliente!.telefone);
+    }
   }
 
-  @override
-  void dispose() {
-    _nomeController.dispose();
-    _telefoneController.dispose();
-    super.dispose();
+  String _somenteNumeros(String value) {
+    return value.replaceAll(RegExp(r'\D'), '');
   }
 
-  void _salvar() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _salvar() async {
+    final nome = _nomeController.text.trim();
+    final telefone = _somenteNumeros(_telefoneController.text);
 
-    setState(() => _salvando = true);
+    if (nome.isEmpty || telefone.isEmpty) return;
 
-    final cliente = ClienteModel(
-      id: widget.cliente?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      nome: _nomeController.text.trim(),
-      telefone: _telefoneController.text.replaceAll(RegExp(r'\D'), ''),
-    );
-
-    _controller.salvar(cliente);
-
-    await Future.delayed(const Duration(milliseconds: 300));
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cliente salvo com sucesso')),
+    if (_cliente == null) {
+      await _service.criar(
+        ClienteModel(
+          id: '',
+          nome: nome,
+          telefone: telefone,
+        ),
+      );
+    } else {
+      await _service.atualizar(
+        ClienteModel(
+          id: _cliente!.id,
+          nome: nome,
+          telefone: telefone,
+        ),
       );
     }
+
+    if (!mounted) return;
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEdicao = _cliente != null;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.cliente == null ? 'Novo Cliente' : 'Editar Cliente'),
+        title: Text(isEdicao ? 'Editar Cliente' : 'Novo Cliente'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nomeController,
-                decoration: const InputDecoration(labelText: 'Nome'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Informe o nome' : null,
+        child: Column(
+          children: [
+            TextField(
+              controller: _nomeController,
+              decoration: const InputDecoration(labelText: 'Nome'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _telefoneController,
+              keyboardType: TextInputType.phone,
+              inputFormatters: [
+                PhoneInputFormatter(),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Telefone',
+                hintText: '(11) 91234-5678',
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _telefoneController,
-                decoration: const InputDecoration(labelText: 'Telefone'),
-                keyboardType: TextInputType.phone,
-                inputFormatters: [PhoneInputFormatter()],
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Informe o telefone' : null,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _salvar,
+                child: const Text('Salvar'),
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _salvando ? null : _salvar,
-                child: _salvando
-                    ? const CircularProgressIndicator()
-                    : const Text('Salvar'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

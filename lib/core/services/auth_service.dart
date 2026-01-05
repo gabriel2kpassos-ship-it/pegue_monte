@@ -3,25 +3,38 @@ import 'package:firebase_auth/firebase_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Lista de usuários que você definiu
-  final List<String> _usuariosValidos = ['mirian', 'geisimara'];
+  /// Mapeamento de usuário -> email
+  final Map<String, String> _usuarios = {
+    'miriandaniela13': 'mirian@peguemonte.com',
+    'geisimara': 'geisimara@peguemonte.com',
+  };
 
-  Future<User?> login(String username, String password) async {
-    try {
-      String userLower = username.toLowerCase().trim();
+  Future<User?> loginComUsuario({
+    required String usuario,
+    required String senha,
+  }) async {
+    final usuarioNormalizado = usuario.trim().toLowerCase();
 
-      if (!_usuariosValidos.contains(userLower)) return null;
-
-      // O Firebase exige um formato de e-mail, então completamos internamente
-      String emailInterno = "$userLower@peguemonte.com";
-      
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-        email: emailInterno, 
-        password: password.trim()
+    if (!_usuarios.containsKey(usuarioNormalizado)) {
+      throw FirebaseAuthException(
+        code: 'usuario-invalido',
+        message: 'Usuário não encontrado',
       );
-      return result.user;
-    } catch (e) {
-      return null;
     }
+
+    final email = _usuarios[usuarioNormalizado]!;
+
+    final credencial = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: senha,
+    );
+
+    return credencial.user;
   }
+
+  Future<void> logout() async {
+    await _auth.signOut();
+  }
+
+  User? get usuarioAtual => _auth.currentUser;
 }

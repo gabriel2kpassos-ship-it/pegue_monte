@@ -23,7 +23,7 @@ void main() {
       );
     });
 
-    test('deve baixar estoque ao adicionar aluguel', () {
+    test('deve baixar quantidadeao adicionar aluguel', () {
       final aluguel = AluguelModel(
         id: 'a1',
         clienteId: 'c1',
@@ -48,7 +48,7 @@ void main() {
       expect(produto.estoque, 7);
     });
 
-    test('deve devolver estoque ao finalizar aluguel', () {
+    test('deve devolver quantidadeao finalizar aluguel', () {
       final aluguel = AluguelModel(
         id: 'a1',
         clienteId: 'c1',

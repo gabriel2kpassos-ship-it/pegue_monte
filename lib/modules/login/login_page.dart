@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
-import '../dashboard/dashboard_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,65 +9,108 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _userController = TextEditingController();
-  final _passController = TextEditingController();
+  final _usuarioController = TextEditingController();
+  final _senhaController = TextEditingController();
   final _authService = AuthService();
-  bool _loading = false;
 
-  void _entrar() async {
-    setState(() => _loading = true);
-    
-    final user = await _authService.login(_userController.text, _passController.text);
+  bool _carregando = false;
+  String? _erro;
 
-    setState(() => _loading = false);
+  Future<void> _login() async {
+    setState(() {
+      _carregando = true;
+      _erro = null;
+    });
 
-    if (user != null) {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context, 
-          MaterialPageRoute(builder: (context) => const DashboardPage())
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Usuário ou senha inválidos")),
-        );
-      }
+    try {
+      await _authService.loginComUsuario(
+        usuario: _usuarioController.text,
+        senha: _senhaController.text,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } catch (e) {
+      setState(() {
+        _erro = 'Usuário ou senha inválidos';
+      });
+    } finally {
+      setState(() {
+        _carregando = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(25.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Pegue & Monte", 
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor)),
-            const SizedBox(height: 40),
-            TextField(
-              controller: _userController,
-              decoration: const InputDecoration(labelText: "Usuário", border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _passController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: "Senha", border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _loading ? null : _entrar,
-                child: _loading ? const CircularProgressIndicator() : const Text("ENTRAR"),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.celebration,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Pegue e Monte',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  TextField(
+                    controller: _usuarioController,
+                    decoration: const InputDecoration(
+                      labelText: 'Usuário',
+                      prefixIcon: Icon(Icons.person),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  TextField(
+                    controller: _senhaController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Senha',
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                  ),
+
+                  if (_erro != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      _erro!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _carregando ? null : _login,
+                      child: _carregando
+                          ? const CircularProgressIndicator(
+                              color: Colors.white,
+                            )
+                          : const Text('Entrar'),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

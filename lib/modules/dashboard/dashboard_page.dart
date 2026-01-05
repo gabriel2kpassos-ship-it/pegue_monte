@@ -1,112 +1,117 @@
 import 'package:flutter/material.dart';
-
-import '../clientes/clientes_page.dart';
-import '../produtos/produtos_page.dart';
-import '../kits/kits_page.dart';
-import '../alugueis/alugueis_page.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/services/aluguel_service.dart';
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
+  final _authService = AuthService();
+  final _aluguelService = AluguelService();
+
+  DashboardPage({super.key});
+
+  void _logout(BuildContext context) async {
+    await _authService.logout();
+    if (!context.mounted) return;
+    Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  Widget _card({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String route,
+    Widget? subtitle,
+  }) {
+    return InkWell(
+      onTap: () => Navigator.pushNamed(context, route),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                subtitle,
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _alugueisAtivosCard(BuildContext context) {
+    return StreamBuilder<int>(
+      stream: _aluguelService.totalAtivos(),
+      builder: (context, snapshot) {
+        final total = snapshot.data ?? 0;
+
+        return _card(
+          context: context,
+          icon: Icons.event,
+          title: 'Aluguéis',
+          route: '/alugueis',
+          subtitle: Text(
+            '$total ativo(s)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: total > 0 ? Colors.green : Colors.grey,
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sistema Viva Encante'),
-        centerTitle: true,
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _logout(context),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: GridView.count(
           crossAxisCount: 2,
-          mainAxisSpacing: 16,
           crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
           children: [
-            _DashboardCard(
+            _card(
+              context: context,
               icon: Icons.people,
-              label: 'Clientes',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ClientesPage(),
-                  ),
-                );
-              },
+              title: 'Clientes',
+              route: '/clientes',
             ),
-            _DashboardCard(
+            _card(
+              context: context,
               icon: Icons.inventory_2,
-              label: 'Produtos',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProdutosPage(),
-                  ),
-                );
-              },
+              title: 'Produtos',
+              route: '/produtos',
             ),
-            _DashboardCard(
+            _card(
+              context: context,
               icon: Icons.widgets,
-              label: 'Kits',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const KitsPage(),
-                  ),
-                );
-              },
+              title: 'Kits',
+              route: '/kits',
             ),
-            _DashboardCard(
-              icon: Icons.assignment,
-              label: 'Aluguéis',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AlugueisPage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _DashboardCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            _alugueisAtivosCard(context),
           ],
         ),
       ),

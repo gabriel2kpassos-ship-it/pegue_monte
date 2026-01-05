@@ -1,36 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/cliente_model.dart';
 
 class ClienteService {
-  ClienteService._internal();
-  static final ClienteService _instance = ClienteService._internal();
-  factory ClienteService() => _instance;
+  final _db = FirebaseFirestore.instance.collection('clientes');
 
-  final List<ClienteModel> _clientes = [];
-
-  List<ClienteModel> listar() {
-    return List.unmodifiable(_clientes);
+  Stream<List<ClienteModel>> listar() {
+    return _db.snapshots().map(
+          (s) => s.docs
+              .map((d) => ClienteModel.fromMap(d.id, d.data()))
+              .toList(),
+        );
   }
 
-  void adicionar(ClienteModel cliente) {
-    _clientes.add(cliente);
+  Future<void> criar(ClienteModel cliente) async {
+    await _db.add(cliente.toMap());
   }
 
-  void atualizar(ClienteModel cliente) {
-    final index = _clientes.indexWhere((c) => c.id == cliente.id);
-    if (index >= 0) {
-      _clientes[index] = cliente;
-    }
+  Future<void> atualizar(ClienteModel cliente) async {
+    await _db.doc(cliente.id).update(cliente.toMap());
   }
 
-  void remover(String id) {
-    _clientes.removeWhere((c) => c.id == id);
-  }
-
-  ClienteModel? obterPorId(String id) {
-    try {
-      return _clientes.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
-    }
+  Future<void> remover(String id) async {
+    await _db.doc(id).delete();
   }
 }
