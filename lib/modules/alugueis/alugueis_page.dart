@@ -5,6 +5,8 @@ import '../../models/aluguel_model.dart';
 class AlugueisPage extends StatelessWidget {
   final _service = AluguelService();
 
+  AlugueisPage({super.key});
+
   Future<bool> _confirmar(BuildContext context) async {
     return await showDialog<bool>(
           context: context,

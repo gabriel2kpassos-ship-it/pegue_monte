@@ -53,17 +53,17 @@ class PegueEMonteApp extends StatelessWidget {
       initialRoute: '/login',
       routes: {
         // AUTH
-        '/login': (_) => LoginPage(),
+        '/login': (_) => const LoginPage(),
         '/dashboard': (_) => DashboardPage(),
 
         // CLIENTES
         '/clientes': (_) => ClientesPage(selecionar: false),
         '/clientes-select': (_) => ClientesPage(selecionar: true),
-        '/cliente-form': (_) => ClienteFormPage(),
+        '/cliente-form': (_) => const ClienteFormPage(),
 
         // PRODUTOS
         '/produtos': (_) => ProdutosPage(),
-        '/produto-form': (_) => ProdutoFormPage(),
+        '/produto-form': (_) => const ProdutoFormPage(),
 
         // KITS
         '/kits': (_) => KitsPage(selecionar: false),

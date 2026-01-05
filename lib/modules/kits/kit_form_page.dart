@@ -7,6 +7,8 @@ import '../../models/kit_item_model.dart';
 import '../../models/kit_model.dart';
 
 class KitFormPage extends StatefulWidget {
+  const KitFormPage({super.key});
+
   @override
   State<KitFormPage> createState() => _KitFormPageState();
 }

@@ -7,6 +7,8 @@ import '../../models/kit_model.dart';
 import '../../models/cliente_model.dart';
 
 class AluguelFormPage extends StatefulWidget {
+  const AluguelFormPage({super.key});
+
   @override
   State<AluguelFormPage> createState() => _AluguelFormPageState();
 }
