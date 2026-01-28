@@ -45,6 +45,10 @@ class KitsPage extends StatelessWidget {
                 final KitModel kit = controller.kits[index];
 
                 return ListTile(
+                  leading: kit.fotoUrl != null
+                      ? CircleAvatar(
+                          backgroundImage: NetworkImage(kit.fotoUrl!))
+                      : const CircleAvatar(child: Icon(Icons.inventory_2)),
                   title: Text(kit.nome),
                   subtitle: Text(
                     'Itens: ${kit.itens.length} • '

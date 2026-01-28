@@ -72,8 +72,7 @@ class ClientesPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ClienteFormPage(cliente: cliente),
+                              builder: (_) => ClienteFormPage(cliente: cliente),
                             ),
                           );
                         } else if (value == 'excluir') {

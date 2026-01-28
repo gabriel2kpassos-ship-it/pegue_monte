@@ -48,4 +48,39 @@ app.*.map.json
 
 # Dumps e arquivos temporários
 flutter_project_dump.txt
+# =========================
+# SECURITY / SECRETS (CRITICAL)
+# =========================
+.env
+.env.*
+**/*secret*
+**/*secrets*
+**/*token*
+**/*private*
+
+# Firebase Admin SDK (NEVER COMMIT)
+**/serviceAccount*.json
+**/*adminsdk*.json
+
+# Android signing (NEVER COMMIT)
+**/key.properties
+**/*.jks
+**/*.keystore
+
+# =========================
+# ANDROID / GRADLE (generated)
+# =========================
+android/.gradle/
+android/app/build/
+android/build/
+*.keystore
+*.jks
+
+# =========================
+# LOCAL / TOOLING
+# =========================
+.git/        # só se você estiver ZIPANDO e não quer subir a pasta .git
+*.bak
+*.tmp
+
 

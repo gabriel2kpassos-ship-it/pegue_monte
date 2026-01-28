@@ -9,8 +9,7 @@ class AluguelService {
   final ProdutoService _produtoService = ProdutoService();
   final KitService _kitService = KitService();
 
-  CollectionReference get _alugueis =>
-      _firestore.collection('alugueis');
+  CollectionReference get _alugueis => _firestore.collection('alugueis');
 
   /// 🔥 LISTAR ALUGUÉIS (STREAM FUNCIONAL – SEM orderBy)
   Stream<List<AluguelModel>> listarAlugueis() {
@@ -32,8 +31,7 @@ class AluguelService {
     final kit = await _kitService.buscarKitPorId(aluguel.kitId);
 
     for (final item in kit.itens) {
-      final produto =
-          await _produtoService.buscarProdutoPorId(item.produtoId);
+      final produto = await _produtoService.buscarProdutoPorId(item.produtoId);
 
       if (produto.quantidade < item.quantidade) {
         throw Exception('Estoque insuficiente para ${produto.nome}');
@@ -42,8 +40,7 @@ class AluguelService {
 
     // 🔻 debitar estoque
     for (final item in kit.itens) {
-      final produto =
-          await _produtoService.buscarProdutoPorId(item.produtoId);
+      final produto = await _produtoService.buscarProdutoPorId(item.produtoId);
 
       await _produtoService.atualizarProduto(
         produto.copyWith(
@@ -69,8 +66,7 @@ class AluguelService {
 
     // 🔺 devolver estoque
     for (final item in kit.itens) {
-      final produto =
-          await _produtoService.buscarProdutoPorId(item.produtoId);
+      final produto = await _produtoService.buscarProdutoPorId(item.produtoId);
 
       await _produtoService.atualizarProduto(
         produto.copyWith(

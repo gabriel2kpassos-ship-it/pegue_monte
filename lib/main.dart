@@ -31,8 +31,7 @@ class PegueMonteApp extends StatelessWidget {
           create: (_) => AuthService(),
         ),
         StreamProvider<User?>(
-          create: (context) =>
-              context.read<AuthService>().authStateChanges,
+          create: (context) => context.read<AuthService>().authStateChanges,
           initialData: null,
         ),
       ],

@@ -4,20 +4,16 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.deepPurple,
       ),
-
       scaffoldBackgroundColor: Colors.grey.shade100,
-
       appBarTheme: const AppBarTheme(
         centerTitle: true,
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.deepPurple,
@@ -32,7 +28,6 @@ class AppTheme {
           ),
         ),
       ),
-
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
@@ -47,7 +42,6 @@ class AppTheme {
           borderSide: BorderSide(color: Colors.deepPurple),
         ),
       ),
-
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,

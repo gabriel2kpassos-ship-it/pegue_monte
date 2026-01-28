@@ -25,16 +25,24 @@ class _LoginPageState extends State<LoginPage> {
         username: _usernameController.text,
         password: _passwordController.text,
       );
+
+      // Se você for navegar para outra tela após login, faça aqui:
+      // if (!mounted) return;
+      // Navigator.of(context).pushReplacement(...);
     } catch (e) {
+      // Se a tela já foi descartada enquanto aguardava o login, não tente usar context.
+      if (!mounted) return;
+
       String message = 'Erro ao fazer login';
 
-      if (e.toString().contains('invalid-username')) {
+      final errorText = e.toString();
+      if (errorText.contains('invalid-username')) {
         message = 'Usuário não autorizado';
-      } else if (e.toString().contains('wrong-password')) {
+      } else if (errorText.contains('wrong-password')) {
         message = 'Senha incorreta';
-      } else if (e.toString().contains('user-not-found')) {
+      } else if (errorText.contains('user-not-found')) {
         message = 'Usuário não encontrado';
-      } else if (e.toString().contains('empty-password')) {
+      } else if (errorText.contains('empty-password')) {
         message = 'Informe a senha';
       }
 
@@ -46,6 +54,13 @@ class _LoginPageState extends State<LoginPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override

@@ -28,8 +28,7 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
   void initState() {
     super.initState();
 
-    _nomeController =
-        TextEditingController(text: widget.cliente?.nome ?? '');
+    _nomeController = TextEditingController(text: widget.cliente?.nome ?? '');
     _telefoneController =
         TextEditingController(text: widget.cliente?.telefone ?? '');
   }
@@ -59,8 +58,12 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
         await _service.criarCliente(cliente);
       }
 
-      if (mounted) Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
     } catch (e) {
+      // Evita usar context se o widget foi descartado durante o await
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao salvar: $e')),
       );
@@ -75,51 +78,66 @@ class _ClienteFormPageState extends State<ClienteFormPage> {
       appBar: AppBar(
         title: Text(_editando ? 'Editar Cliente' : 'Novo Cliente'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _nomeController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome',
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _nomeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Nome',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Informe o nome';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _telefoneController,
+                        decoration: const InputDecoration(
+                          labelText: 'Telefone',
+                        ),
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [PhoneInputFormatter()],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Informe o telefone';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Informe o nome';
-                  }
-                  return null;
-                },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _telefoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Telefone',
-                ),
-                keyboardType: TextInputType.phone,
-                inputFormatters: [PhoneInputFormatter()],
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Informe o telefone';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _salvando ? null : _salvar,
                   child: _salvando
-                      ? const CircularProgressIndicator()
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Salvar'),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

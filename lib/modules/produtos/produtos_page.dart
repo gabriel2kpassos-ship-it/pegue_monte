@@ -43,22 +43,29 @@ class ProdutosPage extends StatelessWidget {
               itemCount: controller.produtos.length,
               itemBuilder: (context, index) {
                 final ProdutoModel produto = controller.produtos[index];
-                final bool estoqueBaixo = produto.quantidade <= 3;
+
+                // ✅ REGRA CORRETA:
+                // Produto só fica vermelho quando o estoque for ZERO
+                final bool estoqueZerado = produto.quantidade == 0;
 
                 return Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  color: estoqueBaixo ? Colors.red.shade50 : null,
+                  color: estoqueZerado ? Colors.red.shade50 : null,
                   child: ListTile(
+                    leading: produto.fotoUrl != null
+                        ? CircleAvatar(
+                            backgroundImage: NetworkImage(produto.fotoUrl!))
+                        : const CircleAvatar(child: Icon(Icons.image)),
                     title: Text(produto.nome),
                     subtitle: Text(
                       'Estoque: ${produto.quantidade}',
                       style: TextStyle(
-                        color: estoqueBaixo ? Colors.red : null,
+                        color: estoqueZerado ? Colors.red : null,
                         fontWeight:
-                            estoqueBaixo ? FontWeight.bold : FontWeight.normal,
+                            estoqueZerado ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     trailing: PopupMenuButton<String>(

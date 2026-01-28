@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/produto_model.dart';
+import 'cloudinary_service.dart';
 
 class ProdutoService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CloudinaryService _cloudinary = const CloudinaryService();
 
-  CollectionReference get _produtos =>
-      _firestore.collection('produtos');
+  CollectionReference get _produtos => _firestore.collection('produtos');
 
-  /// LISTAR PRODUTOS
   Stream<List<ProdutoModel>> listarProdutos() {
     return _produtos.snapshots().map(
           (snapshot) => snapshot.docs
@@ -22,7 +22,6 @@ class ProdutoService {
         );
   }
 
-  /// BUSCAR PRODUTO POR ID (🔥 NECESSÁRIO PARA ALUGUEL)
   Future<ProdutoModel> buscarProdutoPorId(String id) async {
     final doc = await _produtos.doc(id).get();
 
@@ -36,18 +35,34 @@ class ProdutoService {
     );
   }
 
-  /// CRIAR PRODUTO
   Future<void> criarProduto(ProdutoModel produto) async {
     await _produtos.add(produto.toFirestore());
   }
 
-  /// ATUALIZAR PRODUTO
   Future<void> atualizarProduto(ProdutoModel produto) async {
     await _produtos.doc(produto.id).update(produto.toFirestore());
   }
 
-  /// EXCLUIR PRODUTO
+  /// ✅ Excluir produto + apagar imagem no Cloudinary
   Future<void> excluirProduto(String id) async {
-    await _produtos.doc(id).delete();
+    final docRef = _produtos.doc(id);
+    final snap = await docRef.get();
+
+    if (!snap.exists) return;
+
+    final produto = ProdutoModel.fromFirestore(
+      snap.id,
+      snap.data() as Map<String, dynamic>,
+    );
+
+    final publicId = produto.fotoPublicId;
+
+    // 1) Deleta imagem primeiro (se falhar, não apaga o Firestore -> você pode tentar de novo)
+    if (publicId != null && publicId.isNotEmpty) {
+      await _cloudinary.deleteImage(publicId);
+    }
+
+    // 2) Deleta documento no Firestore
+    await docRef.delete();
   }
 }

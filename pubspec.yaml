@@ -11,24 +11,31 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Locale pt-BR
+  # Localização pt-BR
   flutter_localizations:
     sdk: flutter
 
-  # Firebase (opcional no runtime atual)
+  # Firebase
   firebase_core: ^3.15.2
   cloud_firestore: ^5.5.0
+  firebase_storage: ^12.4.0
+  firebase_auth: ^5.7.0
 
-  # Gerenciamento de estado
+  # Imagens
+  image_picker: ^1.1.2
+  crop_your_image: ^1.1.0
+  image: ^4.2.0
+
+  # HTTP para Cloudflare Worker / Cloudinary
+  http: ^1.6.0
+  path: ^1.9.0
+  http_parser: ^4.1.2
+
+  # Estado e utilidades
   provider: ^6.1.2
-
-  # Utilidades
   intl: ^0.20.2
   mask_text_input_formatter: ^2.9.0
   url_launcher: ^6.3.0
-  firebase_auth: ^5.7.0
-
-# ... (mantenha o início igual)
 
 dev_dependencies:
   flutter_test:

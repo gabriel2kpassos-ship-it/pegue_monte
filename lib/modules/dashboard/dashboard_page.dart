@@ -60,7 +60,11 @@ class DashboardPage extends StatelessWidget {
         builder: (context) {
           return Scaffold(
             appBar: AppBar(
-              title: const Text('Dashboard'),
+              centerTitle: true,
+              title: const Text(
+                'Vive e Encante\nPegue e Monte',
+                textAlign: TextAlign.center,
+              ),
               actions: [
                 IconButton(
                   onPressed: () => _logout(context),
@@ -71,14 +75,11 @@ class DashboardPage extends StatelessWidget {
             body: Padding(
               padding: const EdgeInsets.all(16),
               child: StreamBuilder<List<AluguelModel>>(
-                stream:
-                    context.read<AluguelService>().listarAlugueis(),
+                stream: context.read<AluguelService>().listarAlugueis(),
                 builder: (context, snapshot) {
                   final alugueis = snapshot.data ?? [];
                   final ativos = alugueis
-                      .where(
-                        (a) => a.status == AluguelStatus.ativo,
-                      )
+                      .where((a) => a.status == AluguelStatus.ativo)
                       .length;
 
                   return GridView.count(
